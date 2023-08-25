@@ -348,47 +348,47 @@ pre code {
 
 <div id="introduction" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Introduction</h1>
-<p>This vignette will explore the different methods for calculating the required sample size and number of trials to achieve a specific power in a meta-analysis. All methods are implemented in the <code>RTSA</code>-package. These sample size calculations are intended for meta-analyses and not single studies.</p>
+<p>This vignette will explore the different methods for calculating the required sample size and number of trials to achieve a specific power in a meta-analysis. All methods are implemented in the <code>RTSA</code> package. These sample size calculations are intended for meta-analyses and not for single studies.</p>
 <p>The methods for calculating sample size in a meta-analysis, which we call <em>required information size</em> (or required number of participants) differ depending on presence of heterogeneity. We will present required information size methods for meta-analyses with and without heterogeneity.</p>
-<p>Some of the methods presented in this vignette are implemented in the original TSA software, where others are only available in the <code>RTSA</code>-package.</p>
+<p>Some of the methods presented in this vignette are implemented in the original TSA stand-alone software [1], whereas others are only available in the <code>RTSA</code>.</p>
 <pre class="r"><code>library(RTSA)</code></pre>
 </div>
 <div id="estimation-of-heterogeneity" class="section level1" number="2">
 <h1><span class="header-section-number">2</span> Estimation of heterogeneity</h1>
-<p>We will be considering heterogeneity in this vignette. When heterogeneity is expected or present, we need to adjust our meta-analysis to accommodate this extra source of variation. When there is heterogeneity present in a meta-analysis, we estimate <span class="math inline">\(\tau^2\)</span> and can use either <span class="math inline">\(I^2\)</span> (inconsistency) or <span class="math inline">\(D^2\)</span> (diversity) to try an quantify the size of heterogeneity. These heterogeneity metrics are however quite difficult to estimate in most meta-analyses and the estimates are often very uncertain, especially for meta-analyses with few and small studies. Heterogeneity has an impact on both the interpretation of the meta-analysis results and on the power calculation as described in <span class="citation">@Ioannidis2007</span>. It is strongly recommended that this uncertainty must be reported and taken into consideration when both interpreting the results of the meta-analysis and when conducting the sample and trial size calculation. The <code>RTSA</code>-package includes confidence intervals and standard errors on the three measures of heterogeneity - <span class="math inline">\(\tau^2\)</span>, <span class="math inline">\(I^2\)</span>, and <span class="math inline">\(Q^2\)</span>. These intervals calculated via the <code>confint.rma.uni()</code> function from the <a href="https://www.metafor-project.org/"><code>metafor</code>-package</a>.</p>
-<p>We will see in this vignette how estimate a sample and trial size for a meta-analysis including how to incorporate the estimation uncertainty of the heterogeneity. The original sample size calculation in TSA did not incorporate the uncertainty.</p>
-<p>We start with considering scenarios without heterogeneity and when the sample and trial size calculation are perform prior initiation of the trials. A meta-analysis planned/design prior the initiation of the trials is called a prospective meta-analysis.</p>
+<p>We will be considering heterogeneity in this vignette. When heterogeneity is expected or present, we need to adjust our meta-analysis to accommodate this extra source of variation. When there is heterogeneity present in a meta-analysis, we estimate <span class="math inline">\(\tau^2\)</span> and can use either <span class="math inline">\(D^2\)</span> (diversity) or <span class="math inline">\(I^2\)</span> (inconsistency) to try to quantify the size of heterogeneity relative to the total variation in the meta-analysis. All the heterogeneity metrics are however quite difficult to estimate in most meta-analyses and the estimates are often uncertain, especially for meta-analyses with few and/or small studies. Heterogeneity has an impact on both the interpretation of the meta-analysis results and on the power calculation as described in [2]. It is strongly recommended that this uncertainty must be reported and taken into consideration when both interpreting the results of the meta-analysis and when conducting the sample size (required information size) and trial size calculations. The <code>RTSA</code> package includes confidence intervals and standard errors on the three measures of heterogeneity - <span class="math inline">\(\tau^2\)</span>, <span class="math inline">\(I^2\)</span>, and <span class="math inline">\(Q^2\)</span>. These intervals are calculated via the <code>confint.rma.uni()</code> function from the <a href="https://www.metafor-project.org/"><code>metafor</code>-package</a>.</p>
+<p>We will see in this vignette how estimate a sample and trial size for a meta-analysis including how to incorporate the estimation uncertainty of the heterogeneity. The original sample size calculation in the original stand-alone TSA software [1] did not incorporate the uncertainty.</p>
+<p>We start with considering scenarios without heterogeneity when the sample and trial size calculations are performed prior initiation of the trials. A meta-analysis planned/design prior the initiation of the trials is called a prospective meta-analysis.</p>
 </div>
 <div id="prospective-meta-analysis" class="section level1" number="3">
 <h1><span class="header-section-number">3</span> Prospective meta-analysis</h1>
-<p>Sample size calculation for prospective meta-analysis are when calculating sample size of a not yet carried out meta-analysis. When using an already carried out meta-analysis for calculating how many more participants and trials are needed for achieving a specific level of power is investigated in the Retrospective-section <a href="#retro">4</a>.</p>
+<p>Sample size calculations for prospective meta-analyses are done prior the conduct of the meta-analysis. If a meta-analysis already exists, how many more participants and trials that are needed for achieving a specific level of power can be calculated. This is investigated in the Retrospective meta-analysis Section <a href="#retro">4</a>.</p>
 <div id="no-heterogeneity" class="section level2" number="3.1">
 <h2><span class="header-section-number">3.1</span> No heterogeneity</h2>
 <p>For meta-analyses without heterogeneity, we will be fitting fixed-effect meta-analysis models, whereas random-effects meta-analysis models will be fitted for meta-analyses with heterogeneity.</p>
-<p>For a fixed-effect meta-analysis the original TSA software uses the sample size formula for a single trial with a normally distributed outcome. The required information size (RIS) is presented as the total number of participants needed to achieve a specific power. The total number of participants counts both the number of participants in the control and the intervention group. The formula is defined as:</p>
+<p>For a fixed-effect meta-analysis the original TSA software [1] uses the sample size formula for a single trial with a normally distributed outcome. The required information size (RIS) is presented as the total number of participants needed to achieve a specific power. The total number of participants counts both the number of participants in the control and the intervention group. The formula is defined as:</p>
 <p><span class="math display" id="eq:fixedRIS">\[\begin{align} 
 RIS = 4 \cdot (z_{1-\alpha/side} + z_\beta)^2 \cdot \frac{\nu}{\theta^2}. \tag{3.1}
 \end{align}\]</span></p>
-<p>For binary data <span class="math inline">\(\nu = p_0\cdot(1-p_0)\)</span> with <span class="math inline">\(p_0 = (p_I + p_C)/2\)</span> and <span class="math inline">\(\theta = p_C - p_I\)</span> where <span class="math inline">\(p_I\)</span> is the proportion of events in the intervention group and <span class="math inline">\(p_C\)</span> is the proportion of events in the control group. For continuous data <span class="math inline">\(\theta\)</span> is an apriori estimate of the difference in means between the two treatment groups and <span class="math inline">\(\nu\)</span> is the assumed variance.</p>
-<p>What we need to define in order to make the sample size calculation differs depending on whether our outcome is risk ratios (RR), odds ratios (OR), risk differences (RD) or mean differences (continuous). For mean differences, we need prior specification of:</p>
+<p>For binary data <span class="math inline">\(\nu = p_0\cdot(1-p_0)\)</span> with <span class="math inline">\(p_0 = (p_I + p_C)/2\)</span> and <span class="math inline">\(\theta = p_C - p_I\)</span> where <span class="math inline">\(p_I\)</span> is the proportion of events in the intervention group and <span class="math inline">\(p_C\)</span> is the proportion of events in the control group. For continuous data <span class="math inline">\(\theta\)</span> is an a priori estimate of the difference in means between the two treatment groups and <span class="math inline">\(\nu\)</span> is the assumed variance.</p>
+<p>What we need to define to make the sample size calculation differs depending on whether our outcome is risk ratios (RR), odds ratios (OR), risk differences (RD), or mean differences (MD). For mean differences, we need prior specification of:</p>
 <ul>
 <li>The minimum clinically relevant difference <span class="math inline">\(\theta\)</span>.</li>
 <li>The expected standard deviation <span class="math inline">\(\nu\)</span>.</li>
 <li>test type (one- or two-sided), type-I error and type-II error levels.</li>
 </ul>
-<p>For RR, OR or RD, we need specification of:</p>
+<p>For RR, OR, or RD, we need specification of:</p>
 <ul>
-<li>The minimum clinically relevant difference <span class="math inline">\(\theta\)</span>.</li>
-<li>Common probability of event <span class="math inline">\(p_0\)</span>.</li>
+<li>The minimum clinically relevant difference <span class="math inline">\(\theta\)</span>, expressed either as a RD, RR, or OR. For RR, it can also be expressed as a relative risk reduction (RRR).</li>
+<li>The probability of event in the control group <span class="math inline">\(p_C\)</span>.</li>
 <li>test type (one- or two-sided), type-I-error and type-II error levels.</li>
 </ul>
-<p>Suppose we assume an effect of intervention compared to control for a dichotomous outcome resulting in a risk ratio of <span class="math inline">\(RR = 0.9\)</span> with a common probability of event being <span class="math inline">\(p_0 = 0.1\)</span>. To calculate the number of required participants, we use the RTSA function <code>ris()</code>. The default values for <code>alpha</code> is 0.05, for <code>beta</code> 0.2, and a two-sided test, hence <code>side = 2</code>.</p>
-<pre class="r"><code>ris(outcome = &quot;RR&quot;, mc = 0.9, p0 = 0.1)
+<p>Suppose we assume an effect of intervention compared with control for a dichotomous outcome resulting in a risk ratio of <span class="math inline">\(RR = 0.9\)</span> with a common probability of event being <span class="math inline">\(p_C = 0.1\)</span>. To calculate the number of required participants, we use the RTSA function <code>ris()</code>. We set <code>alpha</code> to 0.05, <code>beta</code> to 0.1 and use a two-sided test, hence <code>side = 2</code>.</p>
+<pre class="r"><code>ris(outcome = &quot;RR&quot;, mc = 0.9, pC = 0.1, alpha = 0.05, beta = 0.1, side = 2)
 #&gt; This is a prospective meta-analysis sample size calculation.
 #&gt; The sample size calculation assumes a 2-sided test, equal group sizes,
 #&gt; a type-I-error of 0.05 and a type-II-error of 0.1. 
 #&gt; The minimum clinical relevant value is set to: 0.9 for outcome metric RR.
-#&gt; Additional parametres for sample size are:
+#&gt; Additional parameters for sample size are:
 #&gt; Probability of event in the control group: 0.1.
 #&gt; 
 #&gt; Fixed-effect required information size:
@@ -399,7 +399,7 @@ RIS = 4 \cdot (z_{1-\alpha/side} + z_\beta)^2 \cdot \frac{\nu}{\theta^2}. \tag{3
 </div>
 <div id="heterogeneity" class="section level2" number="3.2">
 <h2><span class="header-section-number">3.2</span> Heterogeneity</h2>
-<p>The original TSA formulas do not give an estimate of the required number of trials to achieve a specific power. However, recent papers have shown a need for a minimum number of trials to achieve a specific power when heterogeneity is present (Kulinskaya 2013). In this section, we will present a method for calculating the required number of trials.</p>
+<p>The original TSA software formulas do not give an estimate of the required number of trials to achieve a specific power. However, recent papers have shown a need for a minimum number of trials to achieve a specific power when heterogeneity is present [3]. In this section, we will present a method for calculating the required number of trials.</p>
 <p>We start with presenting the methods implemented in the original TSA software before presenting the newly added methods that calculate the required number of trials. For the required sample size calculation, TSA uses the following formulas depending on the choice of using either diversity <span class="math inline">\(D^2\)</span> or inconsistency <span class="math inline">\(I^2\)</span>.</p>
 <p><span class="math display">\[\begin{align}
 RIS_{D^2} = \frac{1}{1-D^2}\cdot 4 \cdot (z_{1-\alpha/2} + z_\beta)^2 \cdot \frac{\nu}{\theta^2}.
@@ -411,28 +411,30 @@ RIS_{I^2} = \frac{1}{1-I^2}\cdot 4 \cdot (z_{1-\alpha/2} + z_\beta)^2 \cdot \fra
 <p><span class="math display">\[\begin{align*}
 D^2 = \frac{\tau^2}{\tau^2 + \sigma^2_D}, \quad I^2 = \frac{\tau^2}{\tau^2 + \sigma^2_M}.
 \end{align*}\]</span></p>
-<p>For more information about the two formulas, see (Wetterslev 2009).</p>
-<p>An example of calculating RIS using RIS based on diversity (<span class="math inline">\(D^2\)</span>) or inconsistency (<span class="math inline">\(I^2\)</span>) is given below.</p>
-<pre class="r"><code>ris(outcome = &quot;RR&quot;, mc = 0.9, p0 = 0.2, random = TRUE, I2 = 0.2, D2 = 0.3)
-#&gt; Warning in ris(outcome = &quot;RR&quot;, mc = 0.9, p0 = 0.2, random = TRUE, I2 = 0.2, :
-#&gt; `fixed` is changed from TRUE to FALSE due to presence of tau2, I2 and/or D2.
+<p>For more information about the two formulas, see [4].</p>
+<p>An example of calculating RIS using RIS based on Diversity (<span class="math inline">\(D^2\)</span>) or Inconsistency (<span class="math inline">\(I^2\)</span>) is given below.</p>
+<pre class="r"><code>ris(outcome = &quot;RR&quot;, mc = 0.9, pC = 0.2, random = TRUE, I2 = 0.2, D2 = 0.3,
+    side = 2, alpha = 0.05, beta = 0.2)
+#&gt; Warning in ris(outcome = &quot;RR&quot;, mc = 0.9, pC = 0.2, random = TRUE, I2 = 0.2, :
+#&gt; There is provided a value for tau2, I2 and/or D2. Argument fixed is changed to
+#&gt; FALSE.
 #&gt; This is a prospective meta-analysis sample size calculation.
 #&gt; The sample size calculation assumes a 2-sided test, equal group sizes,
-#&gt; a type-I-error of 0.05 and a type-II-error of 0.1. 
+#&gt; a type-I-error of 0.05 and a type-II-error of 0.2. 
 #&gt; The minimum clinical relevant value is set to: 0.9 for outcome metric RR.
-#&gt; Additional parametres for sample size are:
+#&gt; Additional parameters for sample size are:
 #&gt; Probability of event in the control group: 0.2.
 #&gt; 
 #&gt; Fixed-effect required information size:
-#&gt; 16172 participants in total. 
+#&gt; 12080 participants in total. 
 #&gt; 
 #&gt; Random-effects required information size:
-#&gt; Adjusted by diversity (D^2): 23104 participants in total.
-#&gt; Adjusted by inconsistency (I^2): 20216 participants in total.
+#&gt; Adjusted by diversity (D^2): 17258 participants in total.
+#&gt; Adjusted by inconsistency (I^2): 15100 participants in total.
 #&gt; 
 #&gt; For more information about the sample size calculation see vignette:
 #&gt; &#39;Calculating required sample size and required number of trials&#39;.</code></pre>
-<p>Using a simulation study, we investigate if the method will provide an RIS to achieve sufficient power. Consider a scenario where <span class="math inline">\(RR = 0.9\)</span>, <span class="math inline">\(p_0 = 0.1\)</span>, and <span class="math inline">\(\tau^2=0.05\)</span>. Each <span class="math inline">\(RIS\)</span> formula is depending on <span class="math inline">\(\tau\)</span> and <span class="math inline">\(D^2\)</span> or <span class="math inline">\(I^2\)</span>, so we need a guess for an estimate of <span class="math inline">\(\tau\)</span> and an estimate of <span class="math inline">\(\sigma_D\)</span> or <span class="math inline">\(\sigma_M\)</span>. For each simulation we make an initial meta-analysis of 10 studies where each study has 500 participants. From the meta-analyses we estimate <span class="math inline">\(\tau\)</span>, <span class="math inline">\(\sigma_D\)</span> and <span class="math inline">\(\sigma_M\)</span>. From these estimates, we can calculate <span class="math inline">\(RIS_{D^2}\)</span> and <span class="math inline">\(RIS_{I^2}\)</span> providing us with the needed number of participants. An additional trial is then added to achieve the RIS. Redoing this 10,000 times, we wish to see how many times the null hypothesis is rejected to investigate if we on average achieve the right power.</p>
+<p>Using a simulation study, we investigate if the method will provide a required information size (RIS) to achieve sufficient power. Consider a scenario where <span class="math inline">\(RR = 0.9\)</span>, <span class="math inline">\(p_C = 0.1\)</span>, and <span class="math inline">\(\tau^2=0.05\)</span>. Each <span class="math inline">\(RIS\)</span> formula is depending on <span class="math inline">\(\tau\)</span> and <span class="math inline">\(D^2\)</span> or <span class="math inline">\(I^2\)</span>, so we need a guess for an estimate of <span class="math inline">\(\tau\)</span> and an estimate of <span class="math inline">\(\sigma_D\)</span> or <span class="math inline">\(\sigma_M\)</span>. For each simulation we make an initial meta-analysis of 10 studies where each study has 500 participants. From the meta-analyses we estimate <span class="math inline">\(\tau\)</span>, <span class="math inline">\(\sigma_D\)</span>, and <span class="math inline">\(\sigma_M\)</span>. From these estimates, we can calculate <span class="math inline">\(RIS_{D^2}\)</span> and <span class="math inline">\(RIS_{I^2}\)</span> providing us with the needed number of participants. An additional trial is then added to achieve the RIS. Redoing this 10,000 times, we wish to see how many times the null hypothesis is rejected to investigate if we on average achieve the right power.</p>
 <p>To investigate the effect of more trials, we also increase the number of added trials to the meta-analysis from 1 to 10.</p>
 <table>
 <caption>
@@ -619,8 +621,8 @@ Random-effects HKSJ
 </tr>
 </tbody>
 </table>
-<p>We see that we do not reach 80% power.</p>
-<p>We will now give the formula for calculating the minimum number of required trials. Let <span class="math inline">\(\tilde{\theta}\)</span> be the intervention effect, which will be the <span class="math inline">\(\log(RR)\)</span> in our case, <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> are respectively the type-1 and type 2 error rates and <span class="math inline">\(z_{x}\)</span> is the quantile from the normal distribution at <span class="math inline">\(x\)</span>. Then we will need to fulfill the following equation, to ensure that we have the right error rates (Kulinskaya, 2013).</p>
+<p>We see that we do not reach 80% power for the two random-effects models.</p>
+<p>We will now give the formula for calculating the minimum number of required trials. Let <span class="math inline">\(\tilde{\theta}\)</span> be the intervention effect, which will be the <span class="math inline">\(\log(RR)\)</span> in our case, <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span> are respectively the type-1 and type 2 error rates, and <span class="math inline">\(z_{x}\)</span> is the quantile from the normal distribution at <span class="math inline">\(x\)</span>. Then we will need to fulfill the following equation, to ensure that we have the right error rates [3].</p>
 <p><span class="math display">\[\frac{\tilde{\theta}}{\sqrt{\text{Var}(\tilde{\theta})}} =
 z_{1-\alpha/2}+z_{1-\beta}, \quad \text{where} \quad
 \text{Var}(\tilde{\theta}) = \left( \sum_k \frac{1}{2\cdot \sigma_k^2/
@@ -638,22 +640,24 @@ RIS_{New} = \frac{2\cdot \sigma^2}{\frac{\tilde{\theta}\cdot
 K}{\left(z_{1-\alpha/2}+z_{1-\beta}\right)^2} - \tau^2}.
 \end{align}\]</span></p>
 <p>We compare the methods originally implemented in the TSA software with the new methods for calculating both the required number of participants and the required number of trials.</p>
-<p>We set <span class="math inline">\(RR = 0.9\)</span>, <span class="math inline">\(p_0 = 0.1\)</span> and <span class="math inline">\(\tau^2 = 0.05\)</span>. With these values we get the following minimum number of required trials:</p>
-<pre class="r"><code>ris(outcome = &quot;RR&quot;, mc = 0.9, random = TRUE, tau2 = 0.05, p0 = 0.1)
-#&gt; Warning in ris(outcome = &quot;RR&quot;, mc = 0.9, random = TRUE, tau2 = 0.05, p0 = 0.1):
-#&gt; `fixed` is changed from TRUE to FALSE due to presence of tau2, I2 and/or D2.
+<p>We set <span class="math inline">\(RR = 0.9\)</span>, <span class="math inline">\(p_C = 0.1\)</span> and <span class="math inline">\(\tau^2 = 0.05\)</span>. With these values we get the following minimum number of required trials:</p>
+<pre class="r"><code>ris(outcome = &quot;RR&quot;, mc = 0.9, random = TRUE, tau2 = 0.05, pC = 0.1,
+    side = 2, alpha = 0.05, beta = 0.2)
+#&gt; Warning in ris(outcome = &quot;RR&quot;, mc = 0.9, random = TRUE, tau2 = 0.05, pC = 0.1,
+#&gt; : There is provided a value for tau2, I2 and/or D2. Argument fixed is changed
+#&gt; to FALSE.
 #&gt; This is a prospective meta-analysis sample size calculation.
 #&gt; The sample size calculation assumes a 2-sided test, equal group sizes,
-#&gt; a type-I-error of 0.05 and a type-II-error of 0.1. 
+#&gt; a type-I-error of 0.05 and a type-II-error of 0.2. 
 #&gt; The minimum clinical relevant value is set to: 0.9 for outcome metric RR.
-#&gt; Additional parametres for sample size are:
+#&gt; Additional parameters for sample size are:
 #&gt; Probability of event in the control group: 0.1.
 #&gt; 
 #&gt; Fixed-effect required information size:
-#&gt; 36136 participants in total. 
+#&gt; 26994 participants in total. 
 #&gt; 
 #&gt; Random-effects required information size:
-#&gt; Adjusted by tau^2: 2434704 participants in total split over (at minimum) 48 trial(s).
+#&gt; Adjusted by tau^2: 1502892 participants in total split over (at minimum) 36 trial(s).
 #&gt; 
 #&gt; For more information about the sample size calculation see vignette:
 #&gt; &#39;Calculating required sample size and required number of trials&#39;.</code></pre>
@@ -766,10 +770,10 @@ Random-effects HKSJ
 </div>
 <div id="retro" class="section level1" number="4">
 <h1><span class="header-section-number">4</span> Retrospective meta-analysis</h1>
-<p>When we are updating a meta-analysis or want to make a meta-analysis of existing trials, we might be interested in how much more information is needed to achieve a certain level of power. Using information from already conducted trials in the sample and trial size calculation is problematic in terms of introducing bias. The sample size calculation becomes dependent on the specific selection of existing trials that might be published for showing promising results. Hence when conducting a sample size calculation based on earlier trials, there is a risk of the trials not being representative of the real world.</p>
+<p>When we are updating a meta-analysis or want to make a meta-analysis of existing trials, we might be interested in how much more information is needed to achieve a certain level of power. Using information from already conducted trials in the sample and trial size calculations are problematic in terms of introducing bias. The sample size calculation becomes dependent on the specific selection of existing trials that might be published for showing promising results. Hence when conducting a sample size calculation based on earlier trials, there is a risk of the trials not being representative of the real world.</p>
 <p>We will now show how to calculate whether the retrospective meta-analysis fulfills the power requirements.</p>
 <p>In a fixed-effect meta-analysis, we can calculate the extra number of required participants using equation <a href="#eq:fixedRIS">(3.1)</a>. By subtracting the number of acquired participants, we have an estimate for how many more participants we need to have a well-powered meta-analysis. As it is believed in the fixed-effect meta-analysis that the effect of interest is identical across trials, there is no requirement for the power to be achieved to make multiple additional studies. One suffices if it has the right sample size.</p>
-<p>For a random-effects meta-analysis we use an updated version of the formulas used for prospective meta-analyses. Again we use the formulas from (Kulinskaya, 2013). Using the following inequality we can find the remaining number of trials:</p>
+<p>For a random-effects meta-analysis we use an updated version of the formulas used for prospective meta-analyses. Again we use the formulas from [3]. Using the following inequality we can estimate the remaining number of trials:</p>
 <p><span class="math display">\[\begin{align}
 \tau^2 &lt; \frac{K}{\left(z_{1-\alpha/2}+z_{1-\beta}\right)^2/\hat{\theta}^2-1/\sigma^2_{R}}
 \end{align}\]</span></p>
@@ -778,9 +782,9 @@ Random-effects HKSJ
 RIS_{New} = \frac{2\cdot \sigma^2}{\frac{
 K}{\left(z_{1-\alpha/2}+z_{1-\beta}\right)^2/\tilde{\theta}^2-1/\sigma^2_{R}} - \tau^2}.
 \end{align}\]</span></p>
-<p>In both formulas are the <span class="math inline">\(\sigma^2_{R}\)</span> the current estimate of the variance of the pooled effect in the random-effects meta-analysis. Using the <code>metaanalysis</code> function from the package, the additional number of participants and trials can be extracted <code>...$ris</code></p>
+<p>In both formulas, the <span class="math inline">\(\sigma^2_{R}\)</span> is the current estimate of the variance of the pooled effect in the random-effects meta-analysis. Using the <code>metaanalysis</code> function from the R package, the additional number of participants and trials can be extracted <code>...$ris</code></p>
 <pre class="r"><code>ma &lt;- metaanalysis(data = perioOxy, outcome = &quot;RR&quot;, mc = 0.8, beta = 0.1,
-                   p0 = 0.15)
+                   pC = 0.15)
 ma$ris
 #&gt; This is a retrospective meta-analysis sample size calculation. 
 #&gt; The sample size calculation assumes a 2-sided test, equal group sizes,
@@ -790,15 +794,14 @@ ma$ris
 #&gt; The number of required participants for a fixed-effect meta-analysis is reached.
 #&gt; 
 #&gt; Random-effects required information size:
-#&gt; Adjusted by tau^2: 215192 participants in total are additionally required. 
-#&gt; These can be split over (at minimum) 8 trial(s).
-#&gt; Adjusted by diversity (D^2): 7639 participants in total are additionally required. 
-#&gt; Adjusted by inconsistency (I^2): 3343 participants in total are additionally required.
+#&gt; Adjusted by tau^2: 184896 participants are additionally required in total split over (at minimum) 9 trial(s).
+#&gt; Adjusted by diversity (D^2): 10441 participants in total are additionally required. 
+#&gt; Adjusted by inconsistency (I^2): 3345 participants in total are additionally required.
 #&gt; 
 #&gt; For more information about the sample size calculation see vignette: 
 #&gt; &#39;Calculating required sample size and required number of trials&#39;.</code></pre>
-<p>As seen in the example we do not need more participants for a fixed-effect meta-analysis with 80% power and a RR set to 0.8. We find that we additionally need 215192 participants over 8 trials of equal size to have sufficient power given the estimate of <span class="math inline">\(\tau^2\)</span>.</p>
-<p>If we take into consideration the uncertainty of the <span class="math inline">\(\tau^2\)</span> estimate, we can compute the additional number of participants and trials given the lower and upper limit of the <span class="math inline">\(\tau^2\)</span> estimate. For the lower limit of <span class="math inline">\(\tau^2\)</span>, we have that we need at minimum 1 more trials with 4033 participants per trial:</p>
+<p>As seen in the example we do not need more participants for a fixed-effect meta-analysis with 80% power and a RR set to 0.8. We find that we additionally need 184896 participants over 9 trials of equal size to have sufficient power given the estimate of <span class="math inline">\(\tau^2\)</span>.</p>
+<p>If we take into consideration the uncertainty of the <span class="math inline">\(\tau^2\)</span> estimate, we can compute the additional number of participants and trials given the lower and upper limit of the <span class="math inline">\(\tau^2\)</span> estimate. For the lower limit of <span class="math inline">\(\tau^2\)</span>, we have that we need at minimum one more trials with 5428 participants in the trial:</p>
 <pre class="r"><code>ma$ris$NR_tau$NR_tau_ll
 #&gt; $minTrial
 #&gt; [1] 1
@@ -806,26 +809,35 @@ ma$ris
 #&gt; $nPax
 #&gt;                 [,1] [,2] [,3] [,4]
 #&gt; Trials             1    2    3    4
-#&gt; Pax per trial   4033 1640 1029  750
-#&gt; Total nr of pax 4033 3280 3087 3000
+#&gt; Pax per trial   5428 2135 1329  965
+#&gt; Total nr of pax 5428 4270 3987 3860
 #&gt; 
 #&gt; $tau2
 #&gt; [1] 0.002601661</code></pre>
-<p>If we increase the number of additional trials to 4, we need 750 per trial.</p>
-<p>In the worst case scenario we need way more. Here the minimum number of required trials are 43 additionally. This shows that we have a lot of uncertainty about the <span class="math inline">\(\tau^2\)</span> estimate.</p>
+<p>If we increase the number of additional trials to four, we need 965 per trial.</p>
+<p>In the worst case scenario we need way more. Here the minimum number of required trials are 47 additionally. This shows that we have a lot of uncertainty about the <span class="math inline">\(\tau^2\)</span> estimate.</p>
 <pre class="r"><code>ma$ris$NR_tau$NR_tau_ul
 #&gt; $minTrial
-#&gt; [1] 43
+#&gt; [1] 47
 #&gt; 
 #&gt; $nPax
-#&gt;                   [,1]  [,2]  [,3]  [,4]
-#&gt; Trials              43    44    45    46
-#&gt; Pax per trial     2857  1405   932   697
-#&gt; Total nr of pax 122851 61820 41940 32062
+#&gt;                     [,1]   [,2]  [,3]  [,4]
+#&gt; Trials                47     48    49    50
+#&gt; Pax per trial     372783   3485  1751  1169
+#&gt; Total nr of pax 17520801 167280 85799 58450
 #&gt; 
 #&gt; $tau2
 #&gt; [1] 0.3473498</code></pre>
 <p>Note that if the meta-analysis is sequential, the sample and trial size requirements for sufficient power are larger but often close to the requirements of a non-sequential meta-analysis.</p>
+</div>
+<div id="references" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> References</h1>
+<ol style="list-style-type: decimal">
+<li><p>Thorlund K, Engstrøm J, Wetterslev J, Brok J, Imberger G, Gluud C (2011). User manual for trial sequential analysis (TSA). Copenhagen Trial Unit, Centre for Clinical Intervention Research, Copenhagen, Denmark. URL <a href="https://ctu.dk/wp-content/uploads/2021/03/2017-10-10-TSA-Manual-ENG_ER.pdf" class="uri">https://ctu.dk/wp-content/uploads/2021/03/2017-10-10-TSA-Manual-ENG_ER.pdf</a>.</p></li>
+<li><p>Ioannidis JP, Patsopoulos NA, Evangelou E. Uncertainty in heterogeneity estimates in meta-analyses. BMJ. 2007 Nov 3;335(7626):914-6. doi: 10.1136/bmj.39343.408449.80. PMID: 17974687; PMCID: PMC2048840.</p></li>
+<li><p>Kulinskaya E, Wood J. Trial sequential methods for meta-analysis. Res Synth Methods. 2014 Sep;5(3):212-20. doi: 10.1002/jrsm.1104. Epub 2013 Nov 28. PMID: 26052847.</p></li>
+<li><p>Wetterslev J, Thorlund K, Brok J, Gluud C. Estimating required information size by quantifying diversity in random-effects model meta-analyses. BMC Med Res Methodol. 2009 Dec 30;9:86. doi: 10.1186/1471-2288-9-86. PMID: 20042080; PMCID: PMC2809074.</p></li>
+</ol>
 </div>
 
 

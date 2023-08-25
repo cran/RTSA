@@ -9,10 +9,11 @@ options(rmarkdown.html_vignette.check_title = FALSE)
 library(RTSA)
 
 ## -----------------------------------------------------------------------------
-ris(outcome = "RR", mc = 0.9, p0 = 0.1)
+ris(outcome = "RR", mc = 0.9, pC = 0.1, alpha = 0.05, beta = 0.1, side = 2)
 
 ## -----------------------------------------------------------------------------
-ris(outcome = "RR", mc = 0.9, p0 = 0.2, random = TRUE, I2 = 0.2, D2 = 0.3)
+ris(outcome = "RR", mc = 0.9, pC = 0.2, random = TRUE, I2 = 0.2, D2 = 0.3,
+    side = 2, alpha = 0.05, beta = 0.2)
 
 ## ---- eval = FALSE, include=FALSE---------------------------------------------
 #  # simulate 10 trials
@@ -21,9 +22,9 @@ ris(outcome = "RR", mc = 0.9, p0 = 0.2, random = TRUE, I2 = 0.2, D2 = 0.3)
 #  outm = matrix(NA, ncol = 4, nrow = 10)
 #  
 #  RR <- 0.9
-#  p0 <- 0.1
-#  pI <- round(exp(log(p0) + log(RR) / 2), 4)
-#  pC <- round(exp(log(p0) - log(RR) / 2), 4)
+#  pC <- 0.1
+#  pI <- round(exp(log(pC) + log(RR) / 2), 4)
+#  pC <- round(exp(log(pC) - log(RR) / 2), 4)
 #  theta = round(pC - pI, 4)
 #  n = 2500
 #  K = 10
@@ -36,10 +37,10 @@ ris(outcome = "RR", mc = 0.9, p0 = 0.2, random = TRUE, I2 = 0.2, D2 = 0.3)
 #    for (h in 1:nsim) {
 #      ln_RR = rnorm(K, mean = log(RR), sd = sqrt(tau2))
 #  
-#      pI = exp(log(p0) + ln_RR)
+#      pI = exp(log(pC) + ln_RR)
 #      pI[pI < 0.01] = 0.01
 #      pI[pI > 0.99] = 0.99
-#      pC = rep(exp(log(p0)),K)
+#      pC = rep(exp(log(pC)),K)
 #      pC[pC < 0.01] = 0.01
 #      pC[pC > 0.99] = 0.99
 #      outmat = matrix(NA, ncol = 4, nrow = K)
@@ -78,10 +79,10 @@ ris(outcome = "RR", mc = 0.9, p0 = 0.2, random = TRUE, I2 = 0.2, D2 = 0.3)
 #      }
 #  
 #      ln_RR = rnorm(m, mean = log(RR), sd = sqrt(tau2))
-#      pI = exp(log(p0) + ln_RR)
+#      pI = exp(log(pC) + ln_RR)
 #      pI[pI < 0.01] = 0.01
 #      pI[pI > 0.99] = 0.99
-#      pC = rep(exp(log(p0)),m)
+#      pC = rep(exp(log(pC)),m)
 #      pC[pC < 0.01] = 0.01
 #      pC[pC > 0.99] = 0.99
 #  
@@ -137,20 +138,21 @@ load("random-effects-TSA.Rda")
 knitr::kable(outm[,-5], caption = "Power per model as a function of number of extra trials and RIS based on Diversity")
 
 ## -----------------------------------------------------------------------------
-ris(outcome = "RR", mc = 0.9, random = TRUE, tau2 = 0.05, p0 = 0.1)
+ris(outcome = "RR", mc = 0.9, random = TRUE, tau2 = 0.05, pC = 0.1,
+    side = 2, alpha = 0.05, beta = 0.2)
 
 ## ---- eval = FALSE, echo = FALSE----------------------------------------------
 #  outl = matrix(NA, ncol = 3, nrow = 4)
 #  
 #  RR <- 0.9
-#  p0 <- 0.1
-#  pI <- round(exp(log(p0)+log(RR)/2),4)
-#  pC <- round(exp(log(p0)-log(RR)/2),4)
+#  pC <- 0.1
+#  pI <- round(exp(log(pC)+log(RR)/2),4)
+#  pC <- round(exp(log(pC)-log(RR)/2),4)
 #  theta = round(pC - pI,4)
 #  nsim = 10000
 #  tau2 = 0.05
 #  
-#  trial.out = minTrial(outcome = "RR", mc = 0.9, tau2 = 0.05, p0 = 0.1)
+#  trial.out = minTrial(outcome = "RR", mc = 0.9, tau2 = 0.05, pC = 0.1)
 #  
 #  outtau = numeric(nsim)
 #  outpvalue = matrix(NA, ncol = 3, nrow = nsim)
@@ -163,10 +165,10 @@ ris(outcome = "RR", mc = 0.9, random = TRUE, tau2 = 0.05, p0 = 0.1)
 #      outmat = matrix(NA,ncol = 4, nrow = K)
 #  
 #      ln_RR = rnorm(K, mean = log(RR), sd = sqrt(tau2))
-#      pI = exp(log(p0)+ln_RR/2)
+#      pI = exp(log(pC)+ln_RR/2)
 #      pI[pI < 0.01] = 0.01
 #      pI[pI > 0.99] = 0.99
-#      pC = exp(log(p0)-ln_RR/2)
+#      pC = exp(log(pC)-ln_RR/2)
 #      pC[pC < 0.01] = 0.01
 #      pC[pC > 0.99] = 0.99
 #      for(i in 1:(K)){
@@ -203,7 +205,7 @@ knitr::kable(outl[,c(4,5,1,2,3)], caption = "Power per model as a function of nu
 
 ## -----------------------------------------------------------------------------
 ma <- metaanalysis(data = perioOxy, outcome = "RR", mc = 0.8, beta = 0.1,
-                   p0 = 0.15)
+                   pC = 0.15)
 ma$ris
 
 ## -----------------------------------------------------------------------------

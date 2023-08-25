@@ -166,7 +166,7 @@ ma_power <- function(zb, za = rep(-20, length(zb)), delta, info, zc = NULL, zd =
 # alpha_boundary ----
 # Calculate boundaries for sequential meta-analysis based on type-1-error spending.
 alpha_boundary <- function(inf_frac, side, alpha, beta,
-                     zninf = -20, tol = 1e-15, delta = NULL, bs = FALSE,
+                     zninf = -20, tol = 1e-09, delta = NULL, bs = FALSE,
                      es_alpha = NULL,
                      gamma = NULL, rho = NULL, r = 18,
                      type = "design", design_R = NULL){
@@ -204,15 +204,13 @@ alpha_boundary <- function(inf_frac, side, alpha, beta,
   if(type == "analysis"){
     info <- sd_inf(timing= inf_frac*design_R)
   }
-
+  
   # set criteria for first spending (not under 0, not over alpha)
   alpha_spend$as_incr[1] <- pmin(alpha, alpha_spend$as_incr[1])
   alpha_spend$as_incr[1] <- pmax(0, alpha_spend$as_incr[1])
 
   if(alpha_spend$as_incr[1] < tol){
     zb[1] <- -zninf
-  } else if(alpha_spend$as_incr[1] == alpha){
-    zb[1] <- 0
   } else {
     zb[1] <- qnorm(alpha_spend$as_incr[1], lower.tail = FALSE)
   }
@@ -232,6 +230,7 @@ alpha_boundary <- function(inf_frac, side, alpha, beta,
   zj <- zj_wj$zj
   wj <- zj_wj$wj
 
+  if(nn > 1){
   for(i in 2:nn){
     if(i == 2){
       last <- init_int(wj = wj, zj = zj, delta = 0, stdv = info$sd_incr)
@@ -273,6 +272,7 @@ alpha_boundary <- function(inf_frac, side, alpha, beta,
       zj <- zj_wj_up$zj
       wj <- zj_wj_up$wj
     }
+  }
   }
 
   alpha_ubound <- zb

@@ -1,31 +1,31 @@
-#' plot.RTSA
+#' Plot RTSA object. Returns the R version of the original TSA plot. 
 #'
 #' @param x RTSA object
 #' @param model Whether a fixed- or random-effects meta-analysis should be used. Defaults to random.
 #' @param type Should Z-scores (classic) or outcome values (outcome) be plotted.
 #' @param theme Whether the theme is traditional TSA (classic) or modern (modern)
-#' @param sign Whether the y-axis runs from -Inf to Inf, or Inf to -Inf.
 #' @param ... Other arguments to plot.RTSA
 #'
 #' @return Plot. Either a plot for two sided testing or one-sided
 #' @export
 #'
-#' @importFrom ggplot2 ggplot coord_cartesian geom_hline theme_bw geom_vline geom_line geom_point aes theme element_blank geom_ribbon xlab ylab scale_x_continuous expansion scale_y_continuous scale_fill_identity scale_colour_manual ggtitle geom_segment geom_label scale_y_reverse sec_axis theme_classic element_text margin scale_linetype_manual element_rect margin guides guide_legend geom_polygon
+#' @importFrom ggplot2 ggplot coord_cartesian geom_hline theme_bw geom_vline geom_line geom_point aes theme element_blank geom_ribbon xlab ylab scale_x_continuous expansion scale_y_continuous scale_fill_identity scale_colour_manual ggtitle geom_segment geom_label scale_y_reverse sec_axis theme_classic element_text margin scale_linetype_manual element_rect guides guide_legend geom_polygon
 #' @importFrom scales percent
 #' @importFrom stats na.omit complete.cases
 #'
 #' @examples
 #' data(perioOxy)
 #' outRTSA <- RTSA(type = "analysis", data = perioOxy, outcome = "RR", mc = 0.8,
-#'  side = 2, alpha = 0.05, beta = 0.2, fixed = FALSE, es_alpha = "esOF")
+#'  side = 2, alpha = 0.05, beta = 0.2, fixed = FALSE, es_alpha = "esOF", design = NULL)
 #' plot(x = outRTSA)
 #'
-plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", sign = 1, ...){
+plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", ...){
 
   if(sum(class(x) == "boundaries") > 0){
     x$settings$side <- x$side
     x$results$AIS <- 1
-    x$results$DARIS <- 1
+    x$results$HARIS <- 1
+    x$results$RIS <- 1
     tmp_ca <- x$alpha/x$side
     x$settings$design <- NULL
     x$settings$type = "design"
@@ -34,33 +34,29 @@ plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", s
     x$settings$beta <- x$beta
     x$settings$alpha <- x$alpha
     x$settings$outcome <- "none"
-    xlabz <- "Information fraction (IF)"
+    xlabz <- "Information percentage"
     x$settings$fixed <- T
     x$settings$es_alpha <- x$es_alpha
     x$settings$es_beta <- x$es_beta
 
       if(x$side == 1){
-        df <- data.frame("timing" = c(0,x$inf_frac*x$root),
-                         "alpha_upper" = c(20,x$alpha_ubound))
+        df <- data.frame("sma_timing" = c(0,x$inf_frac*x$root),
+                         "upper" = c(20,x$alpha_ubound))
         if(x$futility != "none"){
-          df <- cbind(df, data.frame("beta_lower" = c(-20,x$beta_lbound)))
+          df <- cbind(df, data.frame("fut_lower" = c(-20,x$beta_lbound)))
         }
       } else {
-        df <- data.frame("timing" = c(0,x$inf_frac*x$root),
-                        "alpha_upper" = c(20,x$alpha_ubound),
-                        "alpha_lower" = c(-20,x$alpha_lbound))
+        df <- data.frame("sma_timing" = c(0,x$inf_frac*x$root),
+                        "upper" = c(20,x$alpha_ubound),
+                        "lower" = c(-20,x$alpha_lbound))
         if(x$futility != "none"){
-          df <- cbind(df, data.frame("beta_upper" = c(NA,x$beta_ubound),
-                                   "beta_lower" = c(NA,x$beta_lbound)))
+          df <- cbind(df, data.frame("fut_upper" = c(NA,x$beta_ubound),
+                                   "fut_lower" = c(NA,x$beta_lbound)))
         }
       }
   } else {
 
-    if(x$settings$outcome %in% c("OR", "RR") & x$settings$mc < 1){
-      sign = -1
-    }
-
-    xlabz <- ""
+    xlabz <- "Information percentage"
   if(model == "random" & x$settings$type == "analysis"){
     if(length(which(!is.na(x$results$results_df$naiveCIrandom_upper))) == 0){
       model <- "fixed"
@@ -75,22 +71,21 @@ plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", s
   if(x$settings$type == "analysis") df <- x$results$results_df
   if(x$settings$type == "design"){
     df <- x$results$design_df
-    df$timing <- df$timing
   }
   df <- rbind(NA,df)
-  df[1,c("timing", "alpha_upper")] <- c(0, 20)
-
+  df[1,c("sma_timing", "upper")] <- c(0, 20)
+  
   if(x$settings$side == 2){
-    df[1,"alpha_lower"] <- c(-20)
+    df[1,"lower"] <- c(-20)
   } else {
     if(x$settings$futility != "none"){
-      df[1,"beta_lower"] <- c(-20)
+      df[1,"fut_lower"] <- c(-20)
     }
   }
-
+  
   tmp_ca <- x$settings$alpha/x$settings$side
 
-  if(!is.null(x$results$seq_inf)){
+  if(!is.null(x$results$seq_inf$median_unbiased)){
     if(x$results$seq_inf$lower > x$results$seq_inf$upper){
       temp <- x$results$seq_inf$lower
       x$results$seq_inf$lower <- x$results$seq_inf$upper
@@ -102,7 +97,7 @@ plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", s
   if(model=="fixed"){
     tmp_outcome <- df$outcome_fixed[!is.na(df$outcome_fixed)]
     tmp_outcome <- tmp_outcome[length(tmp_outcome)]
-    if(!is.null(x$results$seq_inf)){
+    if(!is.null(x$results$seq_inf$median_unbiased)){ # TODO insert naive value if RIS is reached
       tmp_lcl <- c(NA,df$TSAadjCIfixed_lower[!is.na(df$TSAadjCIfixed_lower)])
       tmp_lcl <- c(tmp_lcl[-length(tmp_lcl)], x$results$seq_inf$lower)
       tmp_lcl1 <- x$results$seq_inf$lower
@@ -123,7 +118,7 @@ plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", s
   }else{
     tmp_outcome <- df$outcome_random[!is.na(df$outcome_random)]
     tmp_outcome <- tmp_outcome[length(tmp_outcome)]
-    if(!is.null(x$results$seq_inf)){
+    if(!is.null(x$results$seq_inf$median_unbiased)){
       tmp_lcl <- c(NA,df$TSAadjCIrandom_lower[!is.na(df$TSAadjCIrandom_lower)], x$results$seq_inf$lower)
       tmp_lcl1 <- x$results$seq_inf$lower
       tmp_ucl <- c(NA,df$TSAadjCIrandom_upper[!is.na(df$TSAadjCIrandom_upper)], x$results$seq_inf$upper)
@@ -148,32 +143,80 @@ plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", s
     tmp_pvalue <- "-"
   }
 
-  if(!is.null(x$results$seq_inf)){
+  if(!is.null(x$results$seq_inf$median_unbiased)){
+    
+    if(x$results$seq_inf$overrun){
+      if(x$settings$fixed){
+      tmp_outcome <- df$outcome_fixed[max(which(!is.na(df$outcome_fixed)))]
+      tmp_lcl1 <-
+        df$naiveCIfixed_lower[max(which(!is.na(df$naiveCIfixed_lower)))]  
+      tmp_ucl1 <-
+        df$naiveCIfixed_upper[max(which(!is.na(df$naiveCIfixed_upper)))]
+      tmp_pvalue <- df$pvalues_fixed[max(which(!is.na(df$pvalues_fixed)))]
+      } else {
+        tmp_outcome <- df$outcome_random[max(which(!is.na(df$outcome_random)))]
+        tmp_lcl1 <-
+          df$naiveCIrandom_lower[max(which(!is.na(df$naiveCIrandom_lower)))]  
+        tmp_ucl1 <-
+          df$naiveCIrandom_upper[max(which(!is.na(df$naiveCIrandom_upper)))]
+        tmp_pvalue <- df$pvalues_random[max(which(!is.na(df$pvalues_random)))]
+      }
+    }
+  
+    
     if(tmp_lcl1 > tmp_ucl1){
       temp <- tmp_lcl1
       tmp_lcl1 <- tmp_ucl1
       tmp_ucl1 <- temp
     }
-    ci_text <- paste0(" (", 100*x$settings$conf_level, "% SW-adjusted CI: ",
+    ci_text <- paste0(" (", 100*x$settings$conf_level,
+                      if(!x$results$seq_inf$overrun){paste0("% SW-adjusted CI: ")},
+                      if(x$results$seq_inf$overrun){paste0("% naive CI: ")},
                       format(round(tmp_lcl1,2),nsmall=2),";",
                       format(round(tmp_ucl1,2),nsmall=2))
   } else if(x$settings$type != "design"){
-    ci_text <- paste0(" (",100*x$settings$conf_level, "% TSA-adjusted CI: ",
+    if(x$results$seq_inf$overrun){
+        if(x$settings$fixed){
+          tmp_outcome <- df$outcome_fixed[max(which(!is.na(df$outcome_fixed)))]
+          tmp_lcl1 <-
+            df$naiveCIfixed_lower[max(which(!is.na(df$naiveCIfixed_lower)))]  
+          tmp_ucl1 <-
+            df$naiveCIfixed_upper[max(which(!is.na(df$naiveCIfixed_upper)))]
+          tmp_pvalue <- df$pvalues_fixed[max(which(!is.na(df$pvalues_fixed)))]
+        } else {
+          tmp_outcome <- df$outcome_random[max(which(!is.na(df$outcome_random)))]
+          tmp_lcl1 <-
+            df$naiveCIrandom_lower[max(which(!is.na(df$naiveCIrandom_lower)))]  
+          tmp_ucl1 <-
+            df$naiveCIrandom_upper[max(which(!is.na(df$naiveCIrandom_upper)))]
+          tmp_pvalue <- df$pvalues_random[max(which(!is.na(df$pvalues_random)))]
+        }
+      
+      if(tmp_lcl1 > tmp_ucl1){
+        temp <- tmp_lcl1
+        tmp_lcl1 <- tmp_ucl1
+        tmp_ucl1 <- temp
+      }
+    }
+    ci_text <- paste0(" (",100*x$settings$conf_level, 
+                      if(!x$results$seq_inf$overrun){paste0("% TSA-adjusted CI: ")},
+                      if(x$results$seq_inf$overrun){paste0("% naive CI: ")},
                       format(round(tmp_lcl1,2),nsmall=2),";",
                       format(round(tmp_ucl1,2),nsmall=2))
   }
-
+  
   if(x$settings$type == "analysis"){ results <- paste0(
     "Pooled effect (", x$settings$outcome,") ",
     format(round(tmp_outcome,2),nsmall=2), ci_text,
-    "), p-value: ",
+    if(!is.null(x$results$seq_inf$median_unbiased) & !x$results$seq_inf$overrun){paste0("), SW p-value ")},
+    if(is.null(x$results$seq_inf$median_unbiased) | (!is.null(x$results$seq_inf$median_unbiased) & x$results$seq_inf$overrun)){paste0("), naive p-value ")},
     format(round(tmp_pvalue,4),nsmall=4))} else {
       results <- paste0(
         "Pooled effect (", x$settings$outcome,") ",
         tmp_outcome,
         " (95% TSA-adjusted CI: ",tmp_lcl1,";",
         tmp_ucl1,
-        "), p-value ",tmp_pvalue)
+        "), naive p-value ",tmp_pvalue)
     }
 
   #TYPE CLASSIC VS NEW (ESTIMATE AND CONFINT)
@@ -199,11 +242,11 @@ plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", s
   }
 
   if(x$settings$type == "analysis"){
-  results <- paste0(results,
+      results <- paste0(results,
                     "\n",
-                    "tau^2 ",format(round(x$results$metaanalysis$hete_results$hete_est$tau2,2),nsmall=2),", ",
-                    "I^2 ",percent(x$results$metaanalysis$hete_results$hete_est$I.2,0.1),", ",
-                    "D^2 ",percent(x$results$metaanalysis$hete_results$hete_est$D.2,0.1), ", ",
+                    "\U1D70F\u0302\U00B2 ", format(round(x$results$metaanalysis$hete_results$hete_est$tau2,2),nsmall=2),", ",
+                    "I\u0302\U00B2 " ,percent(x$results$metaanalysis$hete_results$hete_est$I.2,0.1),", ",
+                    "D\u0302\U00B2 " ,percent(x$results$metaanalysis$hete_results$hete_est$D.2,0.1), ", ",
                     "Heterogeneity p-value ", format(round(x$results$metaanalysis$hete_results$hete_est$Q_pval,4),nsmall=4)
   )
   }
@@ -214,14 +257,17 @@ plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", s
     if(x$settings$type  == "analysis" & is.null(x$settings$design)){ paste0("Retrospective TSA with: ")},
     if(x$settings$type  == "design"){ paste0("TSA design with: ")},
     if(x$settings$type  == "analysis" & !is.null(x$settings$design)){ paste0("Prospective or retrospective TSA with: ")},
-    if(sum(class(x) == "RTSA") > 0 & x$settings$outcome %in% c("RR", "OR")){paste0( "P0 ", percent(x$settings$Pax$p0,0.1), ", ")},
+    if(sum(class(x) == "RTSA") > 0 & x$settings$outcome %in% c("RR", "OR")){paste0( "pc ", percent(x$settings$Pax$pC,0.1), ", ")},
     if(sum(class(x) == "RTSA") > 0 & x$settings$outcome == "RR"){paste0( "RRR ", percent(1-x$settings$mc,0.1),", ")},
     if(sum(class(x) == "RTSA") > 0 & x$settings$outcome == "OR"){paste0( "MVD OR ", percent(x$settings$mc,0.1),", ")},
     if(sum(class(x) == "RTSA") > 0 & x$settings$outcome == "MD"){paste0( "MVD ", x$settings$mc,", ")},
     if(sum(class(x) == "RTSA") > 0 & x$settings$outcome == "RD"){paste0( "MVD RD ", percent(x$settings$mc,0.1),", ")},
     "alpha ", percent(x$settings$alpha,0.1), ", ",
-    "beta ", percent(x$settings$beta), ".\n",
-    if(sum(class(x) == "RTSA") > 0 & x$settings$type == "design"){paste0("RIS (adjusted for sequential design): ", ceiling(x$results$DARIS), ".\n")},
+    "beta ", percent(x$settings$beta), ". ",
+    if(sum(class(x) == "RTSA") > 0 & x$settings$fixed == FALSE){paste0("Sample size is adjusted by ", x$settings$random_adj)},
+    if(sum(class(x) == "RTSA") > 0 & x$settings$fixed == FALSE){if(x$settings$random_adj == "tau2"){paste0(" and assuming ", x$ris$NR_tau$NR_tau$nPax[1, 2], " additional trials")}},
+    ".\n",
+    if(sum(class(x) == "RTSA") > 0 & x$settings$type == "design"){paste0("RIS (adjusted for sequential design): ", ceiling(x$results$SMA_HARIS), ".\n")},
     if(sum(class(x) == "RTSA") > 0 & !x$settings$fixed & model == "random"){paste0("Methods: Random-effects, ", x$settings$re_method, "; ")},
     if(sum(class(x) == "RTSA") > 0 & x$settings$fixed | model == "fixed")"Methods: Fixed-effect, ",
     if(sum(class(x) == "RTSA") > 0){paste0("Weight ", x$settings$weights, ", ")},
@@ -271,29 +317,28 @@ plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", s
               "cumulative outcome")
   }
 
-
   #CREATE PLOT
   p <- ggplot(data = df)
 
   if(type=="classic"){
     #Zoom in
     p <- p +
-      coord_cartesian(xlim = c(0,max(df$timing+0.1,1.1, na.rm = T)),
+      coord_cartesian(xlim = c(0,max(df$sma_timing+0.1,1.1, na.rm = T)),
                       ylim = c(ifelse(x$setting$side == 2, -8, -5),8))
 
     #Convetional alpha boundaires
-    p <- p + geom_line(aes(x = timing, y = rep(qnorm(1-tmp_ca), length(timing)),
+    p <- p + geom_line(aes(x = sma_timing, y = rep(qnorm(1-tmp_ca), length(sma_timing)),
                            col = "naiveline", linetype = "naivetype"), linewidth = 0.25,
                        na.rm=TRUE)
 
     if(x$settings$side == 2){
-      p <- p + geom_line(aes(x = timing, y = rep(-qnorm(1-tmp_ca), length(timing)),
+      p <- p + geom_line(aes(x = sma_timing, y = rep(-qnorm(1-tmp_ca), length(sma_timing)),
                              col = "naiveline", linetype = "naivetype"), linewidth = 0.25,
                          na.rm=TRUE)
       }
 
     #Zero line
-    p <- p + geom_segment(x=0,xend=max(df$timing,df$timing*(x$results$AIS/x$results$DARIS), na.rm = T), y=0, yend = 0,
+    p <- p + geom_segment(x=0,xend=max(df$sma_timing,df$sma_timing*(x$results$AIS/x$results$SMA_HARIS), na.rm = T), y=0, yend = 0,
                           linewidth = 0.25, col = "gray", linetype="solid",
                           na.rm=TRUE)
 
@@ -304,23 +349,22 @@ plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", s
       lt_alpha <- "solid"
       colz <- c(colz, `lt_alpha` = lt_alpha)
     }
-
-
+    
     #Alpha boundaries
     p <- p +
-      {if(theme == "modern")geom_ribbon(aes(x=timing, ymin=Inf,
-                             ymax= alpha_upper, fill = "aline"), alpha = 0.25,na.rm=TRUE)} +
-      geom_line(aes(x = timing, y =  alpha_upper, col = "aline", linetype = "lt_alpha"), linewidth = 0.25,
+      {if(theme == "modern")geom_ribbon(aes(x=sma_timing, ymin=Inf,
+                             ymax= upper, fill = "aline"), alpha = 0.25,na.rm=TRUE)} +
+      geom_line(data = df[!is.na(df$upper),],aes(x = sma_timing, y =  upper, col = "aline", linetype = "lt_alpha"), linewidth = 0.25,
                 na.rm=TRUE) +
-      geom_point(aes(x = timing, y =  alpha_upper, col = "aline"), cex = 1, na.rm=TRUE)
+      geom_point(aes(x = sma_timing, y =  upper, col = "aline"), cex = 1, na.rm=TRUE)
 
     if(x$settings$side == 2){
      p <- p +
-       {if(theme == "modern")geom_ribbon(aes(x=timing, ymin=-Inf,
-                              ymax= alpha_lower, fill = "aline"), alpha=0.25,na.rm=TRUE)} +
-       geom_line(aes(x = timing, y =  alpha_lower, col = "aline", linetype = "lt_alpha"),  linewidth = 0.25,
+       {if(theme == "modern")geom_ribbon(aes(x=sma_timing, ymin=-Inf,
+                              ymax= lower, fill = "aline"), alpha=0.25,na.rm=TRUE)} +
+     geom_line(data = df[!is.na(df$upper),], aes(x = sma_timing, y =  lower, col = "aline", linetype = "lt_alpha"),  linewidth = 0.25,
                  na.rm=TRUE) +
-       geom_point(aes(x = timing, y = alpha_lower, col = "aline"), cex = 1,
+       geom_point(aes(x = sma_timing, y = lower, col = "aline"), cex = 1,
                   na.rm=TRUE)
     }
 
@@ -336,75 +380,84 @@ plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", s
 
       if(x$settings$side == 1){
       p <- p +
-        {if(theme == "modern") geom_ribbon(aes(x=timing, ymax=20,
-                                     ymin= beta_lower, fill = "bline"), alpha=0.25,
+        {if(theme == "modern") geom_ribbon(aes(x=sma_timing, ymax=20,
+                                     ymin= fut_lower, fill = "bline"), alpha=0.25,
                                      na.rm=TRUE)} +
-        geom_line(aes(x = timing, y = beta_lower, col = "bline", linetype = "lt_beta"),
+        geom_line(aes(x = sma_timing, y = fut_lower, col = "bline", linetype = "lt_beta"),
                   cex = 0.25, na.rm=TRUE) +
-        geom_point(aes(x = timing, y = beta_lower, col = "bline"), cex = 1, na.rm=TRUE)
+        geom_point(aes(x = sma_timing, y = fut_lower, col = "bline"), cex = 1, na.rm=TRUE)
       }
 
       if(x$settings$side == 2){
         p <- p +
-          {if(theme == "modern") geom_ribbon(aes(x=timing, ymin=beta_upper,
-                                  ymax=beta_lower, fill = "bline"), alpha=0.25, na.rm=TRUE)} +
-          geom_line(aes(x = timing, y = beta_lower, col = "bline", linetype = "lt_beta"), linewidth = 0.25,
+          {if(theme == "modern") geom_ribbon(aes(x=sma_timing, ymin=fut_upper,
+                                  ymax=fut_lower, fill = "bline"), alpha=0.25, na.rm=TRUE)} +
+          geom_line(aes(x = sma_timing, y = fut_lower, col = "bline", linetype = "lt_beta"), linewidth = 0.25,
                     na.rm=TRUE) +
-          geom_point(aes(x = timing, y = beta_lower, col = "bline"), cex = 1,
+          geom_point(aes(x = sma_timing, y = fut_lower, col = "bline"), cex = 1,
                      na.rm=TRUE) +
-          geom_line(aes(x = timing, y = beta_upper, col = "bline", linetype = "lt_beta"), linewidth = 0.25,
+          geom_line(aes(x = sma_timing, y = fut_upper, col = "bline", linetype = "lt_beta"), linewidth = 0.25,
                     na.rm=TRUE) +
-          geom_point(aes(x = timing, y = beta_upper, col = "bline"), cex = 1,
+          geom_point(aes(x = sma_timing, y = fut_upper, col = "bline"), cex = 1,
                      na.rm=TRUE)
       }
     }
 
     if(x$settings$type == "analysis"){
-      #Z-curve
-      x$zTiming <- c(0,cumsum(x$settings$data$nI+x$settings$data$nC)/x$results$DARIS)
+      p <- p + geom_line(data = df[!is.na(df$z_fixed),], aes(x = sma_timing,y = tmp_z[!is.na(df$z_fixed)],
+                                                             col = "zline", linetype = "ztype"), linewidth = 0.25,
+                         na.rm = TRUE) +
+        geom_point(aes(x = sma_timing,y = tmp_z, col="zline"), cex = 1.25, na.rm=TRUE)
       
-      if(max(x$zTiming)<1){x$zTiming <- c(x$zTiming,1)}
-
-    if(length(x$zTiming) < length(df$timing)){
-        x$zTiming <- c(x$zTiming, NA)
-      }
-
-     p <- p + geom_line(aes(x = x$zTiming,y = sign*tmp_z, col = "zline", linetype = "ztype"), linewidth = 0.25,
-                       na.rm=TRUE) +
-      geom_point(aes(x = x$zTiming,y = sign*tmp_z, col="zline"), cex = 1.25, na.rm=TRUE)
 
     # labels and breaks
-    breakz <- c(x$zTiming)[c(TRUE,diff(c(x$zTiming[-length(x$zTiming)]))>0.03,TRUE)]
-    breakz <- breakz[-length(breakz)]
+    breakz <- c(df$sma_timing)[c(TRUE,diff(c(df$sma_timing[-c(length(df$sma_timing)-1,length(df$sma_timing))]))>max(df$sma_timing,na.rm = T)/20,TRUE,TRUE)]
+    if(x$settings$fixed == TRUE){
+      labz_x <- c(paste(paste0(round(breakz,2)*100,"%"), ceiling((x$results$RIS*breakz)), sep = "\n"))
+    } else {
+      labz_x <- c(paste(paste0(round(breakz,2)*100,"%"), ceiling((x$results$HARIS*breakz)), sep = "\n")) 
+    }
+    
+    labz_x[which(breakz == max(df$sma_timing[!is.na(df$z_fixed)]))] <- paste0(labz_x[which(round(breakz,4) == max(round(df$sma_timing[!is.na(df$z_fixed)],4)))],"\nAIS")
+    
+    labz_x[which(breakz == max(df$sma_timing[!is.na(df$upper)]))] <- paste0(labz_x[which(breakz == max(df$sma_timing[!is.na(df$upper)]))],"\nHARIS")
     
     #AIS + DARIS LINE
-    if(x$results$AIS>x$results$DARIS) {expan_x <- 0.05} else {expan_x <- 0}
-    p <- p + geom_segment(x=max(c(0,x$orgTiming)[!is.na(df$z_fixed)]),
-                          xend=max(c(0,x$orgTiming)[!is.na(df$z_fixed)]),
-                          y=-Inf,yend=na.omit(sign*tmp_z)[length(na.omit(tmp_z))],
-                          linetype="dotted", cex = 0.5, col = "gray", na.rm=TRUE) +
-      geom_vline(xintercept = max(df$timing, na.rm = T), linewidth = 0.25, col = "black") +
+    if(x$settings$fixed == TRUE){
+      if(x$results$AIS>x$results$SMA_RIS) {expan_x <- 0.05} else {expan_x <- 0}
+    } else {
+      if(x$results$AIS>x$results$SMA_HARIS) {expan_x <- 0.05} else {expan_x <- 0} 
+    }
+    p <- p + geom_segment(x=max(c(df$sma_timing)[!is.na(df$z_fixed)]),
+                          xend=max(c(df$sma_timing)[!is.na(df$z_fixed)]),
+                          y=-Inf,yend=na.omit(tmp_z)[length(na.omit(tmp_z))],
+                          linetype="dotted", linewidth = 0.5, col = "gray", na.rm=TRUE) +
+      geom_vline(xintercept = max(df$sma_timing[!is.na(df$upper)]), linewidth = 0.25, col = "black") +
       scale_x_continuous(expand = expansion(0,expan_x),
                          breaks=breakz, name = xlabz,
-                         labels = c(round(breakz[-(length(breakz))],2),paste0("AIS:\n",x$results$AIS)),
-                         sec.axis = sec_axis(~.,
-                                             breaks=max(df$timing, na.rm = T),
-                                             labels = paste0("DARIS:\n",ceiling(x$results$DARIS))))
+                         labels = labz_x)
+
     } else {
       p <- p  +
-        geom_vline(xintercept = max(df$timing), cex = 0.25, col = "black") +
-        scale_x_continuous(expand = c(0,0), limits = c(0, max(df$timing, na.rm = T)),
-                           breaks=round(df$timing,2), name = xlabz,
+        geom_vline(xintercept = max(df$sma_timing), cex = 0.25, col = "black") +
+        scale_x_continuous(expand = c(0,0), limits = c(0, max(df$sma_timing, na.rm = T)),
+                           breaks=round(df$sma_timing,2), name = xlabz,
                            sec.axis = sec_axis(~.,
-                                               breaks=max(df$timing, na.rm = T),
+                                               breaks=max(df$sma_timing, na.rm = T),
                                                labels = paste0("SMA RIS IF:\n",round(x$bounds$root,2))))
     }
   } else {
     zeropoint <- 0
 
+    if(x$settings$fixed == TRUE){
+      tim <- x$results$AIS/x$results$SMA_RIS
+    } else {
+      tim <- x$results$AIS/x$results$SMA_HARIS
+    }
+
     #Zoom in
     p <- p +
-      coord_cartesian(xlim = c(0,max(df$timing+0.1,1.1,x$results$AIS/x$results$DARIS, na.rm = T)),
+      coord_cartesian(xlim = c(0,max(df$sma_timing+0.1,1.1,tim, na.rm = T)),
                       ylim = c(tmp_lcl1*0.5,
                                tmp_ucl1*2))
 
@@ -417,7 +470,7 @@ plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", s
     #Confidence intervals
     y_min <- c(tmp_lcl1*0.5,tmp_lcl[-1])
     y_max <- c(tmp_ucl1*2,tmp_ucl[-1])
-    timing_out <- rep.before(df$timing)
+    timing_out <- rep.before(df$sma_timing)
     y_min <- c(rep.before(y_min[-length(y_min)]),y_min[length(y_min)])
     y_max <- c(rep.before(y_max[-length(y_max)]),y_max[length(y_max)])
     if(length(timing_out) > length(y_min)){
@@ -439,31 +492,39 @@ plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", s
                              ymax = y_max), fill="red", alpha = 0.25, linewidth = 0.25, na.rm=TRUE) +
       geom_line(aes(x = timing_out, y = y_min, col = "confline", linetype = "lt_ci"), na.rm=TRUE) +
       geom_line(aes(x = timing_out, y = y_max, col = "confline", linetype = "lt_ci"), na.rm=TRUE) +
-      geom_point(aes(x = timing,y = tmp_z, col="confline"), cex = 1.25, na.rm=TRUE)
+      geom_point(aes(x = sma_timing,y = tmp_z, col="confline"), cex = 1.25, na.rm=TRUE)
 
     #Zero line
-    p <- p + geom_segment(x=0,xend=max(df$timing, na.rm = T), y=zeropoint, yend = zeropoint,
+    p <- p + geom_segment(x=0,xend=max(df$sma_timing, na.rm = T), y=zeropoint, yend = zeropoint,
                           linewidth = 0.25, col = "gray", linetype="solid", na.rm=TRUE)
 
     #Outcome-curve
-    p <- p + geom_line(aes(x = timing,y = tmp_z, col = "outcomeline", linetype = "lt_z"), linewidth = 0.25,
+    p <- p + geom_line(aes(x = sma_timing,y = tmp_z, col = "outcomeline", linetype = "lt_z"), linewidth = 0.25,
                        na.rm=TRUE) +
-      geom_point(aes(x = timing,y = tmp_z, col="outcomeline"), cex = 1.25, na.rm=TRUE)
+      geom_point(aes(x = sma_timing,y = tmp_z, col="outcomeline"), cex = 1.25, na.rm=TRUE)
 
     # labels and breaks
     breakz <- c(0,x$orgTiming)[c(TRUE,diff(c(0,x$orgTiming[-length(x$orgTiming)]))>0.03,TRUE)]
 
-    if(x$results$AIS>x$results$DARIS) {expan_x <- 0.05} else {expan_x <- 0}
+    if(x$settings$fixed == TRUE){
+      if(x$results$AIS>x$results$SMA_RIS) {expan_x <- 0.05} else {expan_x <- 0}
+      lab_ris <-paste0("RIS:\n",ceiling(x$results$SMA_RIS))
+    } else {
+      if(x$results$AIS>x$results$SMA_HARIS) {expan_x <- 0.05} else {expan_x <- 0} 
+      lab_ris <-paste0("HARIS:\n",ceiling(x$results$SMA_HARIS))
+    }
+    
+    
 
     #AIS + DARIS LINE
       p <- p +
-        geom_vline(xintercept = max(df$timing, na.rm = T), linewidth = 0.25, col = "black") +
+        geom_vline(xintercept = max(df$sma_timing, na.rm = T), linewidth = 0.25, col = "black") +
         scale_x_continuous(expand = expansion(0,expan_x), name = xlabz,
                            breaks=breakz,
                            labels = c(round(breakz[-(length(breakz))],2),paste0("AIS:\n",x$results$AIS)),
                            sec.axis = sec_axis(~.,
-                                               breaks=max(df$timing, na.rm = T),
-                                               labels = paste0("DARIS:\n",ceiling(x$results$DARIS))))
+                                               breaks=max(df$sma_timing, na.rm = T),
+                                               labels = lab_ris))
   }
 
   if(sum(class(x) == "RTSA") > 0){
@@ -486,21 +547,24 @@ plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", s
     scale_y_continuous(expand = expansion(0), ylabz, trans = "log",
                        labels = function(x) sprintf("%.2f", x))}} +
     scale_colour_manual(values=colz, labels = labz, name = "") +
+    scale_fill_discrete(guide = "none") + 
     scale_linetype_manual(values=colz, labels = labz, name = "") +
     theme(legend.position="bottom",
           plot.caption.position = "plot",
+          plot.margin = margin(1,0.1,0.1,0.1, "cm"),
+          legend.box.spacing = unit(0, "pt"),
           plot.caption = element_text(hjust=0,color="black",size=8),
           axis.title.y = element_text(color="black",size=10),
           axis.text.x = element_text(color="black",size=9),
           axis.text.y = element_text(color="black"),
           axis.title.x = element_text(color="black",size=10),
-  #       axis.ticks.x.top = element_blank(),
+          axis.ticks.x.top = element_blank(),
           axis.line.x = element_blank(),
           panel.background = element_blank(),
-          plot.tag.position = c(0,1), plot.tag = element_text(hjust=0, vjust=1.1, size=9),
+          plot.tag.position = c(0,1), plot.tag = element_text(hjust=0, vjust=-0.5, size=9),
   legend.key = element_rect(colour = NA, fill = NA),
   legend.box.background = element_blank()) +
-    geom_segment(aes(x = 0, xend = max(timing, na.rm = T), y = y_val1, yend = y_val1)) +
+    geom_segment(aes(x = 0, xend = max(sma_timing, na.rm = T), y = y_val1, yend = y_val1)) +
     geom_segment(aes(x = 0, xend = 0, y = y_val1, yend = y_val2)) +
     guides(colour = guide_legend(override.aes = list(shape = NA, fill = NA)))
   } else {
@@ -515,19 +579,22 @@ plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", s
       scale_y_continuous(expand = expansion(0), ylabz) +
       scale_colour_manual(values=colz, labels = labz, name = "") +
       scale_linetype_manual(values=colz, labels = labz, name = "") +
-      scale_fill_discrete(guide = "none") +
+      scale_fill_discrete(guide = "none") + 
       theme(legend.position="bottom",
             plot.caption.position = "plot",
+            legend.box.spacing = unit(0, "pt"),
+            plot.margin = margin(0.1,0.1,0.1,0.1, "cm"),
             plot.caption = element_text(hjust=0,color="black",size=8),
             axis.title.y = element_text(color="black",size=10),
             axis.text.x = element_text(color="black",size=9),
             axis.text.y = element_text(color="black"),
             axis.line.x = element_blank(),
+            axis.ticks.x.top = element_blank(),
             axis.title.x = element_text(color="black",size=10),
             panel.background = element_blank(),
-            plot.tag.position = c(0,1), plot.tag = element_text(hjust=0, vjust=1.1, size=9),
+            plot.tag.position = c(0,1), plot.tag = element_text(hjust=0, vjust=-0.5, size=9),
             legend.key=element_blank()) +
-      geom_segment(aes(x = 0, xend = max(timing, na.rm = T), y = y_val2, yend = y_val2)) +
+      geom_segment(aes(x = 0, xend = max(sma_timing, na.rm = T), y = y_val2, yend = y_val2)) +
       geom_segment(aes(x = 0, xend = 0, y = y_val1, yend = y_val2)) +
       guides(colour = guide_legend(override.aes = list(shape = NA)))
   }
@@ -535,8 +602,8 @@ plot.RTSA = function(x, model = "random", type = "classic", theme = "classic", s
 }
 
 if(getRversion() >= "2.15.1"){
-  utils::globalVariables(c("timing", "alpha_upper", "alpha_lower", "beta_lower",
-                           "beta_upper"), package = "RTSA", add = FALSE)
+  utils::globalVariables(c("sma_timing", "upper", "lower", "fut_lower",
+                           "fut_upper"), package = "RTSA", add = FALSE)
 }
 
 

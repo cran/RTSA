@@ -8,48 +8,54 @@
 metaanalysis(
   outcome,
   data,
-  study = NULL,
   side = 2,
-  weights = "IV",
-  cont_vartype = "equal",
   alpha = 0.05,
   beta = 0.1,
-  re_method = "DL",
+  weights = "IV",
+  re_method = "DL_HKSJ",
   tau_ci_method = "BJ",
+  cont_vartype = "equal",
   mc = NULL,
+  RRR = NULL,
   sd_mc = NULL,
+  study = NULL,
+  conf_level = 0.95,
   zero_adj = 0.5,
   ...
 )
 }
 \arguments{
-\item{outcome}{Outcome metric for the studies. Choose between: MD (mean difference), RR (relative risk), RD (risk difference) or OR (odds ratio).}
+\item{outcome}{Outcome metric for the studies. Choose between: MD (mean difference), RR (relative risk), RD (risk difference), or OR (odds ratio).}
 
 \item{data}{A data.frame containing the study results. The data set must containing a specific set of columns. These are respectively `eI` (events in intervention group), `eC` (events in control group), `nC` (participants intervention group) or `nI` (participants control group) for discrete data, or, `mI` (mean intervention group), `mC` (mean control group), `sdI` (standard error intervention group), `sdC` (standard error control group),`nC` (participants intervention group) and `nI` (participants control group)  for continuous outcomes. Preferable also a `study` column as an indicator of study.}
 
-\item{study}{Optional vector of study IDs. If no study indicator is provided in `data`, a vector of study indicators e.g. names.}
+\item{side}{Whether a 1- or 2-sided hypothesis test is used. Options are 1 or 2. Default is 2.}
 
-\item{side}{Whether a 1- or 2-sided hypothesis test is used. Options are 1 or 2. Defaults to 2.}
+\item{alpha}{The level of type I error as a percentage, the default is 0.05 corresponding to 5\%.}
 
-\item{weights}{Method for calculating weights. Options are "MH" (Mantel-Haenzel and only optional for binary data) or "IV" (Inverse variance weighting). Defaults to "IV".}
+\item{beta}{The level of type II error as a percentage, the default is 0.1 corresponding to 10\%. Not used unless a sample and trial size calculation is wanted.}
 
-\item{cont_vartype}{Variance type for continuous outcomes. Choices are "equal" (homogeneity of treatment group variances) or "non-equal" (heterogeneity of treatment group variances). Defaults to "equal".}
+\item{weights}{Method for calculating weights. Options are "MH" (Mantel-Haenzel and only optional for binary data) or "IV" (Inverse variance weighting). Default is "IV".}
 
-\item{alpha}{Type-I-error. Defaults to 0.05.}
+\item{re_method}{Methods are "DL" for DerSimonian-Laird or "DL_HKSJ" for DerSimonian-Laird with Hartung-Knapp-Sidik-Jonkman adjustment. Default is "DL_HKSJ".}
 
-\item{beta}{Type-II-error. Not used unless a sample and trial size calculation is wanted. Defaults to 0.1.}
+\item{tau_ci_method}{Methods for computation of confidence interval for heterogeneity estimate tau. Calls rma.uni from the metafor package. Options are "BJ" and "QP". Default is "BJ"}
 
-\item{re_method}{Methods are "DL" for DerSimonian-Laird or "DL_HKSJ" for DerSimonian-Laird with Hartung-Knapp-Sidik-Jonkman adjustment. Defaults to "DL".}
-
-\item{tau_ci_method}{Methods for computation of confidence interval for heterogeneity estimate tau. Calls rma.uni from the metafor package. Options are "BJ" and "QP". Defaults to "BJ"}
+\item{cont_vartype}{Variance type for continuous outcomes. Choices are "equal" (homogeneity of treatment group variances) or "non-equal" (heterogeneity of treatment group variances). Default is "equal".}
 
 \item{mc}{Minimum clinically relevant value. Used for sample and trial size calculation.}
 
+\item{RRR}{Relative risk reduction. Used for binary outcomes with outcome metric RR. Argument mc can be used instead. Must be a value between 0 and 1.}
+
 \item{sd_mc}{The expected standard deviation. Used for sample and trial size calculation for mean differences.}
 
-\item{zero_adj}{Zero adjustment for null events in binary data. Options for now is 0.5.}
+\item{study}{Optional vector of study IDs. If no study indicator is provided in `data`, a vector of study indicators e.g. names.}
 
-\item{...}{Additional variables. See Details.}
+\item{conf_level}{Confidence interval coverage}
+
+\item{zero_adj}{Zero adjustment for null events in binary data. Options for now is 0.5. Default is 0.5.}
+
+\item{...}{Additional variables.}
 }
 \value{
 A \code{metaanalysis} object which is a list with 6 or 7 elements.
@@ -59,13 +65,28 @@ A \code{metaanalysis} object which is a list with 6 or 7 elements.
 \item{metaPrepare}{A list containing the elements used for calculating the study results.}
 \item{synthesize}{A list containing the elements used for calculating the meta-analysis results.}
 \item{settings}{A list containing the arguments used in the \code{metaanalysis} call.}
-\item{ris}{(Only when \code{mc} has been specified or meta-analysis is created as part of \code{RTSA}). List of sample and trial size calculation. See documentation for \code{ris}.}
+\item{ris}{(Only when \code{mc} has been specified or meta-analysis is created as part of \code{RTSA}). List of sample size and trial size calculation. See documentation for \code{ris}.}
 }
 \description{
 Computes a fixed-effect or random-effects meta-analysis including heterogeneity statistics. If \code{mc} is specified, a retrospective sample and trial size is calculated.
 }
 \examples{
+### Basic uses
+# Use perioOxy data from package and run meta-analysis with default settings
 data(perioOxy)
 metaanalysis(outcome = "RR", data = perioOxy, study = perioOxy$trial)
 
+# Run same meta-analysis but with odds ratio as outcome metric, Mantel-Haenzel 
+# weights and DerSimionian-Laird for the variance estimate 
+metaanalysis(outcome = "OR", data = perioOxy, study = perioOxy$trial,
+ weights = "MH", re_method = "DL")
+ 
+# Run meta-analysis with mean difference as outcome metric
+data(eds)
+metaanalysis(outcome = "MD", data = eds)
+
+### Retrospective sample size calculation
+# minimal clinical relevant difference set to an odds ratio of 0.7.
+ma <- metaanalysis(outcome = "OR", data = perioOxy, mc = 0.7)
+ma$ris
 }
