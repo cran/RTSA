@@ -1,12 +1,12 @@
-510cc5ddff16c9c7788275cdc888a467 *DESCRIPTION
+c8ec11768927af159a8bcc0fa0fe468c *DESCRIPTION
 374ab0344c5d84b2d006a0b8d44ffdda *NAMESPACE
-02d36c6900f08eca8a3ee7033dab00da *R/RTSA.R
+8814739d9ca258aa60c2432f6ef33e93 *R/RTSA.R
 2a772b84f1f53046724fec43445ae554 *R/RTSA_helperfunctions.R
 e3c5fd872d1bd5b0886bffe3aa932d98 *R/RTSA_plot.R
 0f131a6c1447e912f63f2ae5b7a5b937 *R/RcppExports.R
-8bf0aabec2c0fd19e921a3cd64dfeb83 *R/boundaries.R
+63a3f8e91d6bb74bc5e635530fdf1bee *R/boundaries.R
 233ed31d22a70b1de45fe2e5128ac1f4 *R/data.R
-364ce4490f70e78d005c198b890f1a98 *R/inference.R
+f91790aa150f74578a199839e91e2066 *R/inference.R
 51a69a4c2ffea4cce3150c16bb6deb86 *R/metaanalysis.R
 eff37d48b74ba97ca01480a45ee828ec *R/ris.R
 2049dc8aec8d9c43f83d6825392e32b0 *README.md
@@ -16,7 +16,7 @@ fb4885d93ad3745fa2422c3e007dcda4 *build/vignette.rds
 a101d375102fd239cf103587c6acafb3 *data/perioOxy.RData
 d18a3c57ff083f764ba68190b3dd4862 *inst/doc/RSTA-SOP.R
 215f2226088041362d1acd2fdbf82008 *inst/doc/RSTA-SOP.Rmd
-a3920ab3084f44515d5cb70349e7cee0 *inst/doc/RSTA-SOP.html
+f9fad9b3d9baf969e1c284001f60c97d *inst/doc/RSTA-SOP.html
 2b201ad68befab197236cfec3b224c42 *inst/doc/RTSA-manual.R
 9cb4743abef3653b0324c70dafd0c85a *inst/doc/RTSA-manual.Rmd
 d8d620e88c11f2d413921ace336567e3 *inst/doc/RTSA-manual.html

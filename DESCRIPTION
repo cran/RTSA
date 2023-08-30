@@ -7,7 +7,7 @@ Authors@R: c(
     person(given = "Markus", family = "Harboe Olsen", email = "markus.harboe.olsen@regionh.dk", role = c('aut', 'ctr')),
     person(given ="Theis", family ="Lange", email = "thlan@sund.ku.dk", role = c('ctr')),
     person(given ="Christian", family ="Gluud", email = "christian.gluud@ctu.dk", role = c('ctr')))
-Version: 0.2.0
+Version: 0.2.1
 Description: Frequentist sequential meta-analysis based on 
     'Trial Sequential Analysis' (TSA) in programmed in Java by the Copenhagen 
     Trial Unit (CTU). The primary function is the calculation of group 
@@ -33,11 +33,11 @@ Suggests: gsDesign, CompQuadForm, dplyr, kableExtra, rmarkdown, knitr,
         bookdown, gridExtra
 VignetteBuilder: knitr, bookdown
 NeedsCompilation: yes
-Packaged: 2023-08-25 09:07:45 UTC; anne
+Packaged: 2023-08-25 12:59:27 UTC; anne
 Author: Anne Lyngholm Soerensen [aut, cre, trl],
   Markus Harboe Olsen [aut, ctr],
   Theis Lange [ctr],
   Christian Gluud [ctr]
 Maintainer: Anne Lyngholm Soerensen <lynganne@gmail.com>
 Repository: CRAN
-Date/Publication: 2023-08-25 10:00:26 UTC
+Date/Publication: 2023-08-30 09:10:21 UTC
