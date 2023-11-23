@@ -413,11 +413,8 @@ D^2 = \frac{\tau^2}{\tau^2 + \sigma^2_D}, \quad I^2 = \frac{\tau^2}{\tau^2 + \si
 \end{align*}\]</span></p>
 <p>For more information about the two formulas, see [4].</p>
 <p>An example of calculating RIS using RIS based on Diversity (<span class="math inline">\(D^2\)</span>) or Inconsistency (<span class="math inline">\(I^2\)</span>) is given below.</p>
-<pre class="r"><code>ris(outcome = &quot;RR&quot;, mc = 0.9, pC = 0.2, random = TRUE, I2 = 0.2, D2 = 0.3,
+<pre class="r"><code>ris(outcome = &quot;RR&quot;, mc = 0.9, pC = 0.2, fixed = FALSE, I2 = 0.2, D2 = 0.3,
     side = 2, alpha = 0.05, beta = 0.2)
-#&gt; Warning in ris(outcome = &quot;RR&quot;, mc = 0.9, pC = 0.2, random = TRUE, I2 = 0.2, :
-#&gt; There is provided a value for tau2, I2 and/or D2. Argument fixed is changed to
-#&gt; FALSE.
 #&gt; This is a prospective meta-analysis sample size calculation.
 #&gt; The sample size calculation assumes a 2-sided test, equal group sizes,
 #&gt; a type-I-error of 0.05 and a type-II-error of 0.2. 
@@ -641,11 +638,8 @@ K}{\left(z_{1-\alpha/2}+z_{1-\beta}\right)^2} - \tau^2}.
 \end{align}\]</span></p>
 <p>We compare the methods originally implemented in the TSA software with the new methods for calculating both the required number of participants and the required number of trials.</p>
 <p>We set <span class="math inline">\(RR = 0.9\)</span>, <span class="math inline">\(p_C = 0.1\)</span> and <span class="math inline">\(\tau^2 = 0.05\)</span>. With these values we get the following minimum number of required trials:</p>
-<pre class="r"><code>ris(outcome = &quot;RR&quot;, mc = 0.9, random = TRUE, tau2 = 0.05, pC = 0.1,
+<pre class="r"><code>ris(outcome = &quot;RR&quot;, mc = 0.9, fixed = FALSE, tau2 = 0.05, pC = 0.1,
     side = 2, alpha = 0.05, beta = 0.2)
-#&gt; Warning in ris(outcome = &quot;RR&quot;, mc = 0.9, random = TRUE, tau2 = 0.05, pC = 0.1,
-#&gt; : There is provided a value for tau2, I2 and/or D2. Argument fixed is changed
-#&gt; to FALSE.
 #&gt; This is a prospective meta-analysis sample size calculation.
 #&gt; The sample size calculation assumes a 2-sided test, equal group sizes,
 #&gt; a type-I-error of 0.05 and a type-II-error of 0.2. 
@@ -654,7 +648,7 @@ K}{\left(z_{1-\alpha/2}+z_{1-\beta}\right)^2} - \tau^2}.
 #&gt; Probability of event in the control group: 0.1.
 #&gt; 
 #&gt; Fixed-effect required information size:
-#&gt; 26994 participants in total. 
+#&gt; 26993 participants in total. 
 #&gt; 
 #&gt; Random-effects required information size:
 #&gt; Adjusted by tau^2: 1502892 participants in total split over (at minimum) 36 trial(s).
@@ -796,7 +790,7 @@ ma$ris
 #&gt; Random-effects required information size:
 #&gt; Adjusted by tau^2: 184896 participants are additionally required in total split over (at minimum) 9 trial(s).
 #&gt; Adjusted by diversity (D^2): 10441 participants in total are additionally required. 
-#&gt; Adjusted by inconsistency (I^2): 3345 participants in total are additionally required.
+#&gt; Adjusted by inconsistency (I^2): 3344 participants in total are additionally required.
 #&gt; 
 #&gt; For more information about the sample size calculation see vignette: 
 #&gt; &#39;Calculating required sample size and required number of trials&#39;.</code></pre>

@@ -12,7 +12,7 @@
 #' @param data A data.frame containing the study results. The data set must containing a specific set of columns. These are respectively `eI` (events in intervention group), `eC` (events in control group), `nC` (participants intervention group) or `nI` (participants control group) for discrete data, or, `mI` (mean intervention group), `mC` (mean control group), `sdI` (standard error intervention group), `sdC` (standard error control group),`nC` (participants intervention group) and `nI` (participants control group)  for continuous outcomes. Preferable also a `study` column as an indicator of study.
 #' @param design RTSA object where type is design.
 #' @param ana_times An optional vector of analysis times. Used if the sequential analysis is not done for all studies included in the meta-analysis.
-#' @param weights Weighting method options include IV (inverse-variance) and MH (Mantel-Haenszel). Defaults to IV.
+#' @param weights Weighting method options include IV (inverse-variance) and MH (Mantel-Haenszel). Defaults to MH.
 #' @param re_method Method for calculating the estimate of heterogeneity, tau^2, and the random-effects meta-analysis variance. Options are "DL" for DerSimonian-Laird and "DL_HKSJ" for the Hartung-Knapp-Sidik-Jonkman adjustment of the DerSimonian-Laird estimator.
 #' @param tau_ci_method Method for calculating confidence intervals for the estimated heterogeneity tau^2. Options are "QP" for Q-profiling and "BJ" for Biggelstaff ....
 #' @param fixed Should only a fixed-effect meta-analysis be computed. Default is FALSE.
@@ -61,12 +61,12 @@
 #' # And use Lan and DeMets' version of Pocock stopping boundaries 
 #' RTSA(type = "analysis", data = perioOxy, outcome = "RR", mc = 0.8, side = 2,
 #'  alpha = 0.05, beta = 0.2, es_alpha = "esOF", futility = "binding",
-#'  es_beta = "esPoc")
+#'  es_beta = "esPoc", random_adj = "D2")
 #'
 #' # Set non-binding futility boundaries
 #' RTSA(type = "analysis", data = perioOxy, outcome = "RR", mc = 0.8, side = 2,
 #'  alpha = 0.05, beta = 0.2, es_alpha = "esOF", futility = "non-binding",
-#'  es_beta = "esPoc")
+#'  es_beta = "esOF")
 #'  
 #' ### Design a prospective sequential meta-analysis
 #' # For continuous data without expected heterogeneity
@@ -119,7 +119,7 @@ RTSA <-
            RRR = NULL,
            sd_mc = NULL,
            pC = NULL,
-           weights = "IV",
+           weights = "MH",
            re_method = "DL_HKSJ",
            tau_ci_method = "BJ",
            gamma = NULL,
@@ -180,6 +180,7 @@ RTSA <-
       beta <- design$settings$beta
       es_alpha <- design$settings$es_alpha
       es_beta <- design$settings$es_beta
+      weights <- design$settings$weights
       futility <- design$settings$futility
       mc <- design$settings$mc
       if(outcome == "MD"){
@@ -236,6 +237,10 @@ RTSA <-
     # check | method
     if (!(weights %in% c("MH", "IV"))) {
       stop("`weights` must be either 'MH', or 'IV'")
+    }
+    # check | weights
+    if (outcome == "MD" & weights == "MH") {
+      weights = "IV"
     }
     # check | re_method
     if (!(re_method %in% c("DL", "DL_HKSJ"))) {
@@ -334,13 +339,16 @@ RTSA <-
       mp <- ma$metaPrepare
       sy <- ma$synthesize
       hete_results <- ma$hete_results
-      if(dim(ma$metaPrepare$data)[1] != dim(data)[1]){
-      data <- ma$metaPrepare$data
-      warning("NB. All zero-event studies (no events in both arms) are removed. Consider changing the outcome to risk difference (RD) to keep the studies in the analysis.")
-      }
-
+      
       # Calculate the cumulative number of participants
       subjects <- cumsum(data$nI + data$nC)
+      
+      if(dim(ma$metaPrepare$data)[1] != dim(data)[1]){
+      data <- ma$metaPrepare$data
+      org_data <- ma$metaPrepare$org_data
+      subjects <- cumsum(org_data$nI[!(org_data$eI + org_data$eC == 0)] + org_data$nC[!(org_data$eI + org_data$eC == 0)])
+      warning("NB. All zero-event studies (no events in both arms) are removed. Consider changing the outcome to risk difference (RD) to keep the studies in the analysis.")
+      }
 
       # Calculate the RIS
       if (outcome %in% c("RR", "OR")) {
@@ -392,8 +400,9 @@ RTSA <-
           fixed = fixed,
           pC = pC,
           type = "retrospective",
-          # tau2 = sy$U[1],
-          # D2 = sy$U[4]
+          tau2 = tau2,
+          D2 = D2,
+          I2 = I2,
           ma = ma,
           RTSA = TRUE,
           trials = trials
@@ -408,8 +417,9 @@ RTSA <-
           sd_mc = sd_mc,
           fixed = fixed,
           type = "retrospective",
-          # tau2 = sy$U[1],
-          # D2 = sy$U[4]
+          tau2 = tau2,
+          D2 = D2,
+          I2 = I2,
           ma = ma,
           RTSA = TRUE,
           trials = trials
@@ -429,8 +439,8 @@ RTSA <-
           trials = trials
         )
       }
-
-      if(sy$U[1] == 0 | fixed | !is.null(outris$war_het)){
+        
+      if(sy$U[1] == 0 | fixed | (!is.null(outris$war_het) & random_adj == "tau2" & is.null(outris$NR_tau))){
         RIS = outris$NF$NF_full
         if(sy$U[1] != 0 & !fixed){
           warning("NB. There is some heterogeneity present in the data, but it was not picked up by the sample size calculating. Consider changing random_adj to D2 or I2.")
@@ -444,15 +454,18 @@ RTSA <-
             warning("NB. The required information size is adjusted by Inconsistency (I^2). This might cause an under-powered analysis. Consider changing the argument `random_adj` from `I2` to `tau2`.")
           } else {
             RIS = outris$NR_tau$NR_tau_full
+            #if(is.null(war_het)) RIS = outris$NR_tau$NR_tau_full
+            #if(!is.null(war_het))
           }
       }
       }
       else {
-        RIS = ceiling(design$results$RIS)
+        if(fixed | length(design$results) == 3) RIS = ceiling(design$results$SMA_RIS)
+        if(!fixed & length(design$results) > 3) RIS = ceiling(design$results$SMA_HARIS)
       }
     } 
     else {
-      
+
       # check adjustment for heterogeneity
       if(fixed == FALSE & is.null(tau2) & is.null(I2) & is.null(D2)){
         stop("Argument fixed is set to FALSE, but there is no tau2, I2 (inconsistency) or D2 (diversity) to adjust the sample size calculation by. Set either fixed to TRUE or provide a heterogeneity estimate.")
@@ -537,6 +550,7 @@ RTSA <-
       )
     
       } else if(type == "analysis" & is.null(design) & power_adj == TRUE){
+        
       # calculate timings
       timing <- c(subjects / RIS)
       
@@ -630,7 +644,7 @@ RTSA <-
             type = "design"
           )
          design_R <- bounds$root
-    } 
+      } 
     
     if(type == "analysis"){
       
@@ -703,7 +717,7 @@ RTSA <-
       } else {
         timing <- trials[, 1]
       }
-
+      
       bounds <- boundaries(
           timing = timing,
           alpha = alpha,
@@ -719,7 +733,7 @@ RTSA <-
       if(!is.null(design) & (timing[max(ana_times)] == max(orgTiming) | abs(timing[max(ana_times)] - max(orgTiming)) < 0.05) & is.null(final_analysis)){
         final_analysis <- T
         warning("We have set this to be the final analysis. If you believe that the analysis will continue past this analysis, set final_analysis to FALSE.")
-      } else if(is.null(design) & sum(orgTiming > design_R) > 0 & is.null(final_analysis)){
+      } else if(is.null(design) & sum(orgTiming > design_R) > 0 & is.null(final_analysis) & max(timing)*1.1 >= max(orgTiming)){
         final_analysis <- T
         warning("Note that the required information size for this sequential meta-analysis has been reached, and TSA considers this to be the final analysis. Hence the argument final_analysis is set to TRUE. If you believe that the analysis will continue past this analysis, set final_analysis to FALSE.")
       } else {
@@ -907,7 +921,7 @@ print.RTSA <- function(x, ...) {
   cat("The required information size is")
   if(x$settings$fixed == TRUE){cat(" not adjusted by heterogeneity")}
   if(x$settings$fixed == FALSE){cat(" adjusted by heterogeneity using", x$settings$random_adj)}
-  if(x$settings$fixed == FALSE & x$settings$type == "analysis" & x$settings$random_adj == "tau2"){cat(paste0(" and assuming ", ifelse(is.null(x$settings$trials),x$ris$NR_tau$NR_tau$nPax[1, 2],x$settings$trials), " additional trials"))}
+  if(x$settings$fixed == FALSE & x$settings$type == "analysis" & x$settings$random_adj == "tau2"){cat(paste0(" and assuming ", ifelse(is.null(x$settings$trials),ifelse(x$ris$NR_tau$NR_tau$nPax[2, 1] <= 0,1,x$ris$NR_tau$NR_tau$nPax[1, 1]),x$settings$trials), " additional trials"))}
   cat(". ")
   if(x$settings$power_adj == TRUE){cat("The required information size is further increased with", paste0(100*round(x$bounds$root,2)-100, " percent due to the sequential design. "))}
   if(x$settings$power_adj == FALSE){cat("The required information size is not scaled according to the sequential design - Consider changing power_adj to TRUE. ")}

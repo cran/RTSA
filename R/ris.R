@@ -62,7 +62,7 @@ minTrial = function(outcome,
       interval = c(0, 1000)
     )$root), TRUE)
     if(inherits(minTrial,"try-error")){
-      war_het <- c("Too low est. heterogeneity to calculate RIS based on tau^2.")
+      war_het <- c("Too low est. heterogeneity or too much information to calculate remaining RIS based on tau^2.")
     }
   } else {
     ntrial = function(mc, trial, alpha, beta, tau2, side) {
@@ -76,6 +76,18 @@ minTrial = function(outcome,
     )$root)
   }
 
+  if(!is.null(var_random) & !is.null(war_het)){
+    ntrial = function(mc, trial, alpha, beta, tau2, side) {
+      trial / ((qnorm(1 - alpha / side) + qnorm(1 - beta)) ^ 2/mc^2) - tau2
+    }
+    
+    minTrial <- ceiling(uniroot(
+      function(trial)
+        ntrial(mc, trial, alpha, beta, tau2, side),
+      interval = c(0, 1000)
+    )$root)
+  }
+  
   if (outcome == "RR") {
     pI <- exp(log(pC) + mc)
     var_mc <- 1 / pC + 1 / pI - 2
@@ -84,17 +96,16 @@ minTrial = function(outcome,
       log(x / (1 - x))
     invlogit <- function(x)
       1 / (1 + exp(-x))
-
     pI <- invlogit(logit(pC) + mc)
     var_mc <- 1 / pI + 1 / pC + 1 / (1 - pI) + 1 / (1 - pC)
   } else if(outcome == "RD"){
     var_mc <- pC*(1-pC)+p1*(1-p1)
   }
 
-  if(fixed == FALSE & is.null(war_het)){
+  if(fixed == FALSE & (is.null(war_het) | minTrial != 0)){
     out.mat = matrix(NA, ncol = 4, nrow = 3)
     out.mat[1, ] <- c(minTrial, minTrial + 1, minTrial + 2, minTrial + 3)
-    if(is.null(var_random)){
+    if(is.null(var_random) & is.null(war_het)){
       out.mat[2, ] <- ceiling(2 * var_mc / (
         mc ^ 2 * c(minTrial, minTrial + 1, minTrial + 2, minTrial + 3) / ((qnorm(1 -
                                                                                    alpha / side) + qnorm(1 - beta)) ^ 2) - tau2
@@ -124,7 +135,8 @@ minTrial = function(outcome,
     }
 
     return(list(minTrial = minTrial, nPax = out.mat, war_het = war_het))
-  } else {
+  }
+  else {
     return(list(war_het = war_het))
   }
 }
@@ -265,7 +277,7 @@ ris <-
     
     # calculate fixed effect sample size
     NF <- 2 * (qnorm(1 - alpha / side) + qnorm(1 - beta)) ^ 2 * 2 * var_mc / mc_nf ^ 2
-    NF <- ceiling(NF) + ceiling(NF) %% 2
+    NF <- ceiling(NF)
 
     if(!is.null(ma)){
       args[names(args) == "ma"] <- NULL
@@ -292,11 +304,11 @@ ris <-
                        beta = beta, pC = pC, tau2 = ma$synthesize$U[1],
                        var_random = ma$synthesize$peR[6], trials = trials)
         war_het <- NR_tau$war_het
-        if(is.null(war_het)){ NR_tau <- append(NR_tau, list(tau2 = ma$synthesize$ci.tau$random[1,1])) 
+        if(is.null(war_het) | NR_tau$minTrial != 0){ NR_tau <- append(NR_tau, list(tau2 = ma$synthesize$ci.tau$random[1,1])) 
         } else {
           NR_tau <- NULL
         }
-        if(ma$synthesize$ci.tau$random[1,2] != 0 & is.null(war_het)){
+        if(ma$synthesize$ci.tau$random[1,2] != 0 & (is.null(war_het) | NR_tau$minTrial != 0)){
         NR_tau_ll <- minTrial(outcome = outcome, mc = mc, alpha = alpha,
                           beta = beta, pC = pC, side = side,
                           tau2 = ma$synthesize$ci.tau$random[1,2],
@@ -319,11 +331,11 @@ ris <-
                        beta = beta, pC = pC, p1 = p1, tau2 = ma$synthesize$U[1],
                        var_random = ma$synthesize$peR[6], trials = trials)
         war_het <- NR_tau$war_het
-        if(is.null(war_het)){ NR_tau <- append(NR_tau, list(tau2 = ma$synthesize$ci.tau$random[1,1])) 
+        if(is.null(war_het) | NR_tau$minTrial != 0){ NR_tau <- append(NR_tau, list(tau2 = ma$synthesize$ci.tau$random[1,1])) 
         } else {
           NR_tau <- NULL
         }
-        if(ma$synthesize$ci.tau$random[1,2] != 0 & is.null(war_het)){
+        if(ma$synthesize$ci.tau$random[1,2] != 0 & (is.null(war_het) | NR_tau$minTrial != 0)){
         NR_tau_ll <- minTrial(outcome = outcome, mc = mc, alpha = alpha,
                           beta = beta, pC = pC, p1 = p1, side = side,
                           tau2 = ma$synthesize$ci.tau$random[1,2],
@@ -342,15 +354,15 @@ ris <-
                        beta = beta, var_mc = var_mc, tau2 = ma$synthesize$U[1],
                        var_random = ma$synthesize$peR[6], trials = trials)
         war_het <- NR_tau$war_het
-        if(is.null(war_het)){ NR_tau <- append(NR_tau, list(tau2 = ma$synthesize$ci.tau$random[1,1])) 
+        if(is.null(war_het) | NR_tau$minTrial != 0){ NR_tau <- append(NR_tau, list(tau2 = ma$synthesize$ci.tau$random[1,1])) 
         } else {
           NR_tau <- NULL
         }
-        if(ma$synthesize$ci.tau$random[1,2] != 0 & is.null(war_het)){
+        if(ma$synthesize$ci.tau$random[1,2] != 0 & (is.null(war_het) | NR_tau$minTrial != 0)){
         NR_tau_ll <- minTrial(outcome = outcome, mc = mc, alpha = alpha,
                           beta = beta, var_mc = var_mc,
                           tau2 = ma$synthesize$ci.tau$random[1,2],
-                          var_random = ma$synthesize$peR[6])
+                          var_random = ma$synthesize$peR[6], side = side)
         NR_tau_ll <- append(NR_tau_ll, list(tau2 = ma$synthesize$ci.tau$random[1,2]))
         } else {
           NR_tau_ll <- NULL
@@ -371,10 +383,10 @@ ris <-
       NR_tau_ul[names(NR_tau_ul) == "war_het"] <- NULL
       
       # sample size for inconsistency adj. and diversity adj.
-      NR_D2 <- 1 / (1 - ma$synthesize$U[4]) * NF
-      NR_I2 <- 1 / (1 - ma$synthesize$U[3]) * NF
-      NR_D2 <- ceiling(NR_D2) + ceiling(NR_D2) %% 2
-      NR_I2 <- ceiling(NR_I2) + ceiling(NR_I2) %% 2
+      NR_D2 <- ifelse(is.null(D2),1 / (1 - ma$synthesize$U[4]) * NF, 1 / (1 - D2) * NF)
+      NR_I2 <- ifelse(is.null(I2),1 / (1 - ma$synthesize$U[3]) * NF, 1 / (1 - I2) * NF)
+      NR_D2 <- ceiling(NR_D2)
+      NR_I2 <- ceiling(NR_I2)
       
       # set relative to the sample size already achieved
       if(is.null(NR_tau)){
@@ -422,11 +434,11 @@ ris <-
       }
       if(!is.null(I2)){
         NR_I2 <- 1 / (1 - I2) * NF
-        NR_I2 <- ceiling(NR_I2) + ceiling(NR_I2) %% 2
+        NR_I2 <- ceiling(NR_I2)
       }
       if(!is.null(D2)){
         NR_D2 <- 1 / (1 - D2) * NF
-        NR_D2 <- ceiling(NR_D2) + ceiling(NR_D2) %% 2
+        NR_D2 <- ceiling(NR_D2)
       }
 
       outlist <-

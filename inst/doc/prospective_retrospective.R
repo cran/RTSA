@@ -14,7 +14,7 @@
 library(RTSA)
 design_pma <- RTSA(type = "design", outcome = "MD", alpha = 0.05, beta = 0.1,
                    mc = 0.5, sd_mc = 1,side = 2, timing = c(0.5,0.75,1),
-                   es_alpha = "esOF", fixed = TRUE)
+                   es_alpha = "esOF", fixed = TRUE, weights = "IV")
 design_pma
 
 ## -----------------------------------------------------------------------------

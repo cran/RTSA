@@ -12,7 +12,7 @@ library(RTSA)
 ris(outcome = "RR", mc = 0.9, pC = 0.1, alpha = 0.05, beta = 0.1, side = 2)
 
 ## -----------------------------------------------------------------------------
-ris(outcome = "RR", mc = 0.9, pC = 0.2, random = TRUE, I2 = 0.2, D2 = 0.3,
+ris(outcome = "RR", mc = 0.9, pC = 0.2, fixed = FALSE, I2 = 0.2, D2 = 0.3,
     side = 2, alpha = 0.05, beta = 0.2)
 
 ## ---- eval = FALSE, include=FALSE---------------------------------------------
@@ -138,7 +138,7 @@ load("random-effects-TSA.Rda")
 knitr::kable(outm[,-5], caption = "Power per model as a function of number of extra trials and RIS based on Diversity")
 
 ## -----------------------------------------------------------------------------
-ris(outcome = "RR", mc = 0.9, random = TRUE, tau2 = 0.05, pC = 0.1,
+ris(outcome = "RR", mc = 0.9, fixed = FALSE, tau2 = 0.05, pC = 0.1,
     side = 2, alpha = 0.05, beta = 0.2)
 
 ## ---- eval = FALSE, echo = FALSE----------------------------------------------
